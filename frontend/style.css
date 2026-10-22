@@ -1,0 +1,237 @@
+/* ===== GLOBAL STYLES ===== */
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f4f7f6;
+    color: #333;
+    margin: 0;
+    padding: 0;
+}
+
+h1 {
+    color: #087f5b;
+    text-align: center;
+    margin: 20px 0;
+}
+
+h2 {
+    color: #087f5b;
+    text-align: center;
+    margin-top: 30px;
+}
+
+/* ===== NAVBAR ===== */
+nav {
+    background-color: #087f5b;
+    padding: 15px 30px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+nav a {
+    color: white;
+    text-decoration: none;
+    margin-right: 20px;
+    font-weight: bold;
+}
+
+nav a:hover {
+    text-decoration: underline;
+}
+
+/* ===== SEARCH FORM ===== */
+#search-form {
+    display: flex;
+    gap: 8px;
+}
+
+#search-input {
+    padding: 8px 12px;
+    border: none;
+    border-radius: 4px;
+    outline: none;
+}
+
+/* ===== PRODUCT GRID (Clean & Equal Columns) ===== */
+#product-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 25px;
+    padding: 20px 40px;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+/* ===== INDIVIDUAL PRODUCT CARDS ===== */
+.product-card {
+    background-color: white;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.product-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.12);
+}
+
+.product-card h3 {
+    color: #087f5b;
+    margin-top: 0;
+    margin-bottom: 10px;
+}
+
+.product-price {
+    font-size: 18px;
+    font-weight: bold;
+    color: #e67e22;
+    margin: 10px 0 5px 0;
+}
+
+.product-category {
+    color: #666;
+    font-size: 14px;
+    margin-bottom: 15px;
+}
+
+/* ===== BUTTONS ===== */
+button {
+    background-color: #069bf1;
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: bold;
+    width: 100%;
+}
+
+button:hover {
+    background-color: #0578b8;
+}
+
+/* ===== PRODUCT IMAGE STYLING ===== */
+.product-img {
+    width: 100%;
+    height: 160px;
+    object-fit: cover;
+    border-radius: 8px;
+    margin-bottom: 12px;
+}
+
+/* ===== CART SECTION STYLING ===== */
+.cart-section {
+    background-color: white;
+    max-width: 600px;
+    margin: 40px auto;
+    padding: 20px 30px;
+    border-radius: 10px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+}
+
+#cart-list {
+    margin-top: 15px;
+    border-bottom: 2px solid #f4f7f6;
+    padding-bottom: 15px;
+}
+
+.cart-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px solid #eee;
+    font-size: 16px;
+}
+
+.empty-cart-msg {
+    color: #888;
+    font-style: italic;
+}
+
+#cart-total {
+    color: #087f5b;
+    text-align: right;
+    font-size: 20px;
+    margin-top: 15px;
+}
+
+/* ===== REMOVE BUTTON STYLING ===== */
+.remove-btn {
+    background-color: #e74c3c;
+    color: white;
+    border: none;
+    padding: 5px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 13px;
+    width: auto; /* Overrides full width buttons */
+}
+
+.remove-btn:hover {
+    background-color: #c0392b;
+}
+
+/* ===== DAY 10 QUANTITY STYLING ===== */
+.cart-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 0;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.cart-details h4 {
+    margin: 0 0 5px 0;
+    color: #087f5b;
+}
+
+.cart-details p {
+    margin: 0;
+    font-size: 14px;
+    color: #555;
+}
+
+.qty-btn-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.qty-btn {
+    background-color: #087f5b;
+    color: white;
+    border: none;
+    width: 30px;
+    height: 30px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.qty-btn:hover {
+    background-color: #066347;
+}
+
+.qty-count {
+    font-size: 16px;
+    font-weight: bold;
+    min-width: 24px;
+    text-align: center;
+}
+
+/* ===== FOOTER ===== */
+footer {
+    background-color: #333;
+    color: white;
+    text-align: center;
+    padding: 15px;
+    margin-top:200px;
+}
