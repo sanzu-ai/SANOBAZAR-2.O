@@ -35,7 +35,7 @@ function renderProducts() {
     }
 }
 
-// Step 4: Add to Cart (Increases quantity if already added)
+// Step 4: Add to Cart (Includes product ID)
 function addToCart(productName) {
     let existingItem = cart.find(item => item.name === productName);
 
@@ -44,6 +44,7 @@ function addToCart(productName) {
     } else {
         let productDetails = products.find(item => item.name === productName);
         cart.push({
+            id: productDetails.id, // Stores database ID!
             name: productDetails.name,
             price: Number(productDetails.price),
             quantity: 1
@@ -74,14 +75,17 @@ function decreaseQuantity(index) {
 function displayCart() {
     const cartList = document.getElementById("cart-list");
     const cartTotal = document.getElementById("cart-total");
+    const checkoutBtn = document.getElementById("checkout-btn");
 
     cartList.innerHTML = "";
-
     let grandTotal = 0;
 
     if (cart.length === 0) {
         cartList.innerHTML = `<p class="empty-cart-msg">Your cart is empty.</p>`;
+        if (checkoutBtn) checkoutBtn.style.display = "none";
     } else {
+        if (checkoutBtn) checkoutBtn.style.display = "block";
+
         for (let i = 0; i < cart.length; i++) {
             let itemSubtotal = cart[i].price * cart[i].quantity;
             grandTotal += itemSubtotal;
@@ -108,3 +112,31 @@ function displayCart() {
 
 // Step 8: Call fetchProducts() on initial page load
 fetchProducts();
+
+// Step 9: Place Order Function (Calls PHP API)
+function placeOrder() {
+    if (cart.length === 0) return;
+
+    fetch("http://localhost/SANOBAZAR/backend/place_order.php", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ cart: cart })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === "success") {
+            alert("🎉 " + data.message + "\nOrder ID: #" + data.order_id);
+            cart = []; // Empty local cart
+            displayCart();
+            fetchProducts(); // Refresh products to show updated stock!
+        } else {
+            alert("❌ Error: " + data.message);
+        }
+    })
+    .catch(error => {
+        console.error("Checkout Error:", error);
+        alert("Failed to connect to checkout server.");
+    });
+}
