@@ -113,24 +113,37 @@ function displayCart() {
 // Step 8: Call fetchProducts() on initial page load
 fetchProducts();
 
-// Step 9: Place Order Function (Calls PHP API)
+// Step 9: Place Order Function (Integrates Logged-in User)
 function placeOrder() {
     if (cart.length === 0) return;
+
+    // Check if user is logged in
+    const savedUser = localStorage.getItem("sanobazar_user");
+    if (!savedUser) {
+        alert("🔒 Please login or create an account to complete your order.");
+        window.location.href = "login.html";
+        return;
+    }
+
+    const currentUser = JSON.parse(savedUser);
 
     fetch("http://localhost/SANOBAZAR/backend/place_order.php", {
         method: "POST",
         headers: {
             "Content-Type": "application/json"
         },
-        body: JSON.stringify({ cart: cart })
+        body: JSON.stringify({ 
+            cart: cart,
+            user_id: currentUser.id  // Sends actual logged-in user ID!
+        })
     })
     .then(response => response.json())
     .then(data => {
         if (data.status === "success") {
             alert("🎉 " + data.message + "\nOrder ID: #" + data.order_id);
-            cart = []; // Empty local cart
+            cart = []; // Clear cart
             displayCart();
-            fetchProducts(); // Refresh products to show updated stock!
+            fetchProducts(); // Refresh live stock on page
         } else {
             alert("❌ Error: " + data.message);
         }
