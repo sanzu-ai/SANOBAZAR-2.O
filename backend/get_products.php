@@ -1,25 +1,40 @@
 <?php
-// Enable Cross-Origin Resource Sharing (CORS) & JSON response header
 header("Access-Control-Allow-Origin: *");
 header("Content-Type: application/json; charset=UTF-8");
 
-// Include database connection
 require_once "db.php";
 
+// Check if search query (q) or category_id is sent via URL parameters
+$search = isset($_GET['q']) ? trim($_GET['q']) : '';
+$categoryId = isset($_GET['category_id']) ? intval($_GET['category_id']) : 0;
+
 try {
-    // SQL query to join products with category names
-    $sql = "SELECT p.id, p.name, p.price, p.stock_quantity, p.image_url, c.category_name AS category
+    $sql = "SELECT p.id, p.name, p.price, p.stock_quantity, p.image_url, c.category_name AS category, p.category_id
             FROM products p
             JOIN categories c ON p.category_id = c.id
-            ORDER BY p.id ASC";
+            WHERE 1=1";
+
+    $params = [];
+
+    // Filter by Category if selected
+    if ($categoryId > 0) {
+        $sql .= " AND p.category_id = ?";
+        $params[] = $categoryId;
+    }
+
+    // Filter by Search Keyword if entered
+    if (!empty($search)) {
+        $sql .= " AND (p.name LIKE ? OR c.category_name LIKE ?)";
+        $params[] = "%$search%";
+        $params[] = "%$search%";
+    }
+
+    $sql .= " ORDER BY p.id ASC";
 
     $stmt = $pdo->prepare($sql);
-    $stmt->execute();
-
-    // Fetch all products as an associative array
+    $stmt->execute($params);
     $products = $stmt->fetchAll();
 
-    // Return products array as JSON
     echo json_encode([
         "status"  => "success",
         "count"   => count($products),

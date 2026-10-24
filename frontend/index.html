@@ -3,51 +3,145 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sanobazar</title>
+    <title>Sanobazar - Smart Shopping</title>
     <link rel="stylesheet" href="style.css">
+    <style>
+        /* ===== MAIN STOREFRONT LAYOUT (Sidebar + Products) ===== */
+        .store-container {
+            display: flex;
+            gap: 25px;
+            max-width: 1200px;
+            margin: 30px auto;
+            padding: 0 20px;
+        }
+
+        /* ===== CATEGORY SIDEBAR (Screen 2 Poster Layout) ===== */
+        .category-sidebar {
+            width: 220px;
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+            height: fit-content;
+        }
+
+        .category-sidebar h3 {
+            color: #087f5b;
+            font-size: 16px;
+            margin-bottom: 15px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #f4f7f6;
+        }
+
+        .category-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .category-item {
+            padding: 10px 12px;
+            margin-bottom: 6px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            color: #444;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .category-item:hover, .category-item.active {
+            background-color: #087f5b;
+            color: white;
+            font-weight: bold;
+        }
+
+        .products-section {
+            flex: 1;
+        }
+
+        .catalog-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .catalog-title {
+            color: #087f5b;
+            margin: 0;
+        }
+
+        .empty-products-msg {
+            text-align: center;
+            padding: 40px;
+            background-color: white;
+            border-radius: 10px;
+            color: #777;
+            font-size: 16px;
+        }
+    </style>
 </head>
 <body>
 
-    <!-- ===== HEADER ===== -->
+    <!-- ===== HEADER & NAVBAR ===== -->
     <header>
-        <h1>Welcome to Sanobazar !</h1>
+        <h1>Welcome to Sanobazar</h1>
 
-        <!-- ===== NAVBAR ===== -->
         <nav>
             <div class="nav-links">
                 <a href="index.html">Home</a>
-                <a href="products.html">Products</a>
-                <a href="about.html">About</a>
-                <a href="contact.html">Contact</a>
+                <a href="login.html" id="nav-login-btn">Login</a>
+                <a href="register.html" id="nav-register-btn">Register</a>
+                <a href="#" id="nav-logout-btn" onclick="userLogout()" style="display: none; color: #ff6b6b;">Logout</a>
             </div>
 
             <!-- ===== SEARCH FORM ===== -->
-            <form id="search-form">
-                <input type="search" id="search-input" name="q" placeholder="Search products...">
+            <form id="search-form" onsubmit="handleSearch(event)">
+                <input type="search" id="search-input" placeholder="Search products...">
                 <button type="submit">Search</button>
             </form>
         </nav>
     </header>
 
-    <!-- ===== MAIN CONTENT ===== -->
+    <!-- ===== MAIN CONTENT AREA ===== -->
     <main>
-        <section>
-            <h2>Our Products</h2>
+        <div class="store-container">
             
-            <!-- Products Grid -->
-            <div id="product-list"></div>
+            <!-- ===== LEFT SIDEBAR: CATEGORIES ===== -->
+            <aside class="category-sidebar">
+                <h3>Categories</h3>
+                <ul class="category-list" id="category-list">
+                    <li class="category-item active" onclick="filterByCategory(0, this)">
+                        <span>All Products</span>
+                    </li>
+                    <!-- Dynamic categories loaded via JS -->
+                </ul>
+            </aside>
 
-            <!-- ===== CART SECTION (Step 12) ===== -->
-            <div class="cart-section">
-                <h2>Your Shopping Cart</h2>
-                <div id="cart-list">
-                    <p class="empty-cart-msg">Your cart is empty.</p>
+            <!-- ===== RIGHT AREA: PRODUCTS CATALOG ===== -->
+            <section class="products-section">
+                <div class="catalog-header">
+                    <h2 class="catalog-title" id="current-category-title">All Products</h2>
                 </div>
-                <h3 id="cart-total">Total: NPR 0</h3>
-                <button id="checkout-btn" onclick="placeOrder()" style="display: none; width: 100%; margin-top: 15px; background-color: #27ae60;">
-                    Proceed to Checkout 🛒
-                </button>
+
+                <div id="product-list"></div>
+            </section>
+        </div>
+
+        <!-- ===== SHOPPING CART SECTION ===== -->
+        <section class="cart-section">
+            <h2>Your Shopping Cart</h2>
+            <div id="cart-list">
+                <p class="empty-cart-msg">Your cart is empty.</p>
             </div>
+            <h3 id="cart-total">Grand Total: NPR 0</h3>
+
+            <button id="checkout-btn" onclick="placeOrder()" style="display: none; width: 100%; margin-top: 15px; background-color: #27ae60;">
+                Proceed to Checkout 🛒
+            </button>
         </section>
     </main>
 
