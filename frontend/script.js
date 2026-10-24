@@ -1,10 +1,8 @@
-// Global State Variables
 let products = [];
 let cart = [];
 let selectedCategoryId = 0;
 let currentSearchKeyword = "";
 
-// Check logged in user state on page load
 function checkUserAuth() {
     const savedUser = localStorage.getItem("sanobazar_user");
     const loginBtn = document.getElementById("nav-login-btn");
@@ -27,7 +25,6 @@ function userLogout() {
     window.location.reload();
 }
 
-// Fetch Categories from MySQL
 function fetchCategories() {
     fetch("http://localhost/SANOBAZAR/backend/get_categories.php")
         .then(res => res.json())
@@ -38,7 +35,7 @@ function fetchCategories() {
                 data.data.forEach(cat => {
                     categoryList.innerHTML += `
                         <li class="category-item" onclick="filterByCategory(${cat.id}, this, '${cat.category_name}')">
-                            <span>${cat.category_name}</span>
+                            ${cat.category_name}
                         </li>
                     `;
                 });
@@ -47,7 +44,6 @@ function fetchCategories() {
         .catch(err => console.error("Error fetching categories:", err));
 }
 
-// Fetch Products from MySQL (with optional category and search filters)
 function fetchProducts() {
     let url = `http://localhost/SANOBAZAR/backend/get_products.php?category_id=${selectedCategoryId}&q=${encodeURIComponent(currentSearchKeyword)}`;
 
@@ -57,70 +53,78 @@ function fetchProducts() {
             if (data.status === "success") {
                 products = data.data;
                 renderProducts();
-            } else {
-                console.error("Failed to load products:", data.message);
             }
         })
         .catch(error => console.error("Error fetching products:", error));
 }
 
-// Filter Products by Category Click
 function filterByCategory(categoryId, element, categoryName = "All Products") {
     selectedCategoryId = categoryId;
-
-    // Update Active UI State
     document.querySelectorAll(".category-item").forEach(item => item.classList.remove("active"));
     element.classList.add("active");
-
-    // Update Title
     document.getElementById("current-category-title").textContent = categoryName;
-
     fetchProducts();
 }
 
-// Handle Search Form Submission
 function handleSearch(event) {
     event.preventDefault();
     const searchInput = document.getElementById("search-input");
     currentSearchKeyword = searchInput.value.trim();
-
     document.getElementById("current-category-title").textContent = 
         currentSearchKeyword ? `Search Results for "${currentSearchKeyword}"` : "All Products";
-
     fetchProducts();
 }
 
-// Render Products Catalog
 function renderProducts() {
     const productContainer = document.getElementById("product-list");
     productContainer.innerHTML = "";
 
     if (products.length === 0) {
-        productContainer.innerHTML = `
-            <div class="empty-products-msg">
-                🔍 No products found matching your search/category selection.
-            </div>
-        `;
+        productContainer.innerHTML = `<div class="empty-products-msg">🔍 No products found matching your search/category.</div>`;
         return;
     }
 
-    for (let i = 0; i < products.length; i++) {
+    products.forEach(item => {
+        const isLowStock = item.stock_quantity < 5;
         productContainer.innerHTML += `
             <div class="product-card">
-                <img src="${products[i].image_url}" alt="${products[i].name}" class="product-img">
-                <h3>${products[i].name}</h3>
-                <p class="product-price">Price: NPR ${products[i].price}</p>
-                <p class="product-category">Category: ${products[i].category}</p>
-                <p style="font-size: 13px; color: ${products[i].stock_quantity < 5 ? '#e74c3c' : '#27ae60'}; font-weight: bold; margin-bottom: 10px;">
-                    Stock: ${products[i].stock_quantity} units
+                <img src="${item.image_url}" alt="${item.name}" class="product-img">
+                <h3>${item.name}</h3>
+                <p class="product-price">NPR ${item.price}</p>
+                <p class="product-category">Category: ${item.category}</p>
+                <p class="stock-tag ${isLowStock ? 'stock-low' : 'stock-normal'}">
+                    Stock: ${item.stock_quantity} units
                 </p>
-                <button type="button" onclick="addToCart('${products[i].name}')">Add to Cart</button>
+                <button type="button" onclick="addToCart('${item.name}')">Add to Cart</button>
             </div>
         `;
-    }
+    });
 }
 
-// Cart Logic Functions
+function fetchRecommendations() {
+    fetch("http://localhost/SANOBAZAR/backend/get_recommendations.php")
+        .then(res => res.json())
+        .then(data => {
+            if (data.status === "success") {
+                const recContainer = document.getElementById("recommendations-list");
+                recContainer.innerHTML = "";
+
+                data.data.forEach(item => {
+                    recContainer.innerHTML += `
+                        <div class="product-card">
+                            <img src="${item.image_url}" alt="${item.name}" class="product-img">
+                            <h3>${item.name}</h3>
+                            <p class="product-price">NPR ${item.price}</p>
+                            <p class="product-category">Category: ${item.category}</p>
+                            <button type="button" onclick="addToCart('${item.name}')">Add to Cart</button>
+                        </div>
+                    `;
+                });
+            }
+        })
+        .catch(err => console.error("Error loading recommendations:", err));
+}
+
 function addToCart(productName) {
     let existingItem = cart.find(item => item.name === productName);
 
@@ -128,6 +132,7 @@ function addToCart(productName) {
         existingItem.quantity += 1;
     } else {
         let productDetails = products.find(item => item.name === productName);
+        if (!productDetails) return;
         cart.push({
             id: productDetails.id,
             name: productDetails.name,
@@ -214,6 +219,7 @@ function placeOrder() {
             cart = [];
             displayCart();
             fetchProducts();
+            fetchRecommendations();
         } else {
             alert("❌ Error: " + data.message);
         }
@@ -224,7 +230,8 @@ function placeOrder() {
     });
 }
 
-// Initialization on Page Load
+// Initial Calls
 checkUserAuth();
 fetchCategories();
 fetchProducts();
+fetchRecommendations();
