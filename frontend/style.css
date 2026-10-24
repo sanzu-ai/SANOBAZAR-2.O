@@ -725,3 +725,19 @@ footer {
         position: static;
     }
 }
+
+/* Danger button for admin actions */
+.admin-body .btn-danger {
+    padding: 0.35rem 0.75rem;
+    background-color: #ef4444;
+    color: #ffffff;
+    border: none;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.admin-body .btn-danger:hover {
+    background-color: #dc2626;
+}
