@@ -1,7 +1,5 @@
-    <?php
-header("Access-Control-Allow-Origin: *");
-header("Access-Control-Allow-Headers: Content-Type");
-header("Content-Type: application/json; charset=UTF-8");
+<?php
+require_once "auth.php";
 
 require_once "db.php";
 
@@ -24,15 +22,17 @@ try {
 
     // Verify user exists AND password hash matches
     if ($user && password_verify($password, $user['password'])) {
+        session_regenerate_id(true);
+        $_SESSION['user'] = [
+            'id' => (int) $user['id'],
+            'full_name' => $user['full_name'],
+            'email' => $user['email'],
+            'role' => $user['role']
+        ];
         echo json_encode([
             "status"  => "success",
             "message" => "Login successful!",
-            "user"    => [
-                "id"        => $user['id'],
-                "full_name" => $user['full_name'],
-                "email"     => $user['email'],
-                "role"      => $user['role']
-            ]
+            "user" => $_SESSION['user']
         ]);
     } else {
         echo json_encode(["status" => "error", "message" => "Invalid email or password."]);

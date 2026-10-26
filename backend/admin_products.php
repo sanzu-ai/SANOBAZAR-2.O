@@ -1,13 +1,6 @@
 <?php
-header("Access-Control-Allow-Origin: *");
-header("Access-Control-Allow-Methods: GET, POST, DELETE, OPTIONS");
-header("Access-Control-Allow-Headers: Content-Type");
-header("Content-Type: application/json");
-
-if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-    exit;
-}
-
+require_once 'auth.php';
+requireAdmin();
 include 'db.php';
 
 $method = $_SERVER['REQUEST_METHOD'];
@@ -55,6 +48,35 @@ if ($method === 'POST') {
         } else {
             echo json_encode(["status" => "error", "message" => "Failed to restock product."]);
         }
+    } elseif ($action === 'update') {
+        $productId = filter_var($data['product_id'] ?? null, FILTER_VALIDATE_INT);
+        $categoryId = filter_var($data['category_id'] ?? null, FILTER_VALIDATE_INT);
+        $price = filter_var($data['price'] ?? null, FILTER_VALIDATE_FLOAT);
+        $stock = filter_var($data['stock_quantity'] ?? null, FILTER_VALIDATE_INT);
+        $name = trim($data['name'] ?? '');
+        $image = trim($data['image_url'] ?? '');
+
+        if ($productId === false || $productId < 1 || $categoryId === false || $categoryId < 1 ||
+            $price === false || $price <= 0 || $stock === false || $stock < 0 || $name === '') {
+            http_response_code(422);
+            echo json_encode(["status" => "error", "message" => "Enter a valid name, category, price, and stock quantity."]);
+            exit;
+        }
+
+        $stmt = $pdo->prepare("UPDATE products SET name = ?, category_id = ?, price = ?, stock_quantity = ?, image_url = ? WHERE id = ?");
+        $stmt->execute([$name, $categoryId, $price, $stock, $image, $productId]);
+
+        if ($stmt->rowCount() === 0) {
+            $exists = $pdo->prepare("SELECT id FROM products WHERE id = ?");
+            $exists->execute([$productId]);
+            if (!$exists->fetch()) {
+                http_response_code(404);
+                echo json_encode(["status" => "error", "message" => "Product not found."]);
+                exit;
+            }
+        }
+
+        echo json_encode(["status" => "success", "message" => "Product updated successfully!"]);
     }
     exit;
 }

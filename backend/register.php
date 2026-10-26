@@ -17,7 +17,7 @@ if (empty($data['full_name']) || empty($data['email']) || empty($data['password'
 $fullName = trim($data['full_name']);
 $email    = trim($data['email']);
 $password = $data['password'];
-$role     = isset($data['role']) ? $data['role'] : 'customer'; // Default to customer
+$role     = 'customer'; // Public registration must never grant admin access.
 
 try {
     // 1. Check if email already exists

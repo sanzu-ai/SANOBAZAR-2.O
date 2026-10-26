@@ -1,7 +1,6 @@
 <?php
-header("Access-Control-Allow-Origin: *");
-header("Content-Type: application/json; charset=UTF-8");
-
+require_once 'auth.php';
+requireAdmin();
 require_once "db.php";
 
 try {
@@ -22,7 +21,7 @@ try {
     $lowStockCount = $stmtLowStock->fetchColumn();
 
     // 5. Fetch Low Stock Product Details
-    $stmtLowStockItems = $pdo->query("SELECT id, name, price, stock_quantity FROM products WHERE stock_quantity < 5 ORDER BY stock_quantity ASC");
+    $stmtLowStockItems = $pdo->query("SELECT id, name, price, image_url, stock_quantity FROM products WHERE stock_quantity < 5 ORDER BY stock_quantity ASC");
     $lowStockItems = $stmtLowStockItems->fetchAll();
 
     // 6. Fetch Recent Orders with Customer Name
@@ -38,7 +37,8 @@ try {
     echo json_encode([
         "status" => "success",
         "stats" => [
-            "total_revenue"   => number_format($totalRevenue, 2),
+            // Keep this machine-readable; the frontend applies locale formatting.
+            "total_revenue"   => (float)$totalRevenue,
             "total_orders"    => $totalOrders,
             "total_users"     => $totalUsers,
             "low_stock_count" => $lowStockCount
