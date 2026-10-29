@@ -9,10 +9,10 @@ if (empty($_SESSION['user']['id'])) {
 }
 
 try {
-    $stmt = $pdo->prepare('SELECT o.id, o.total_amount, o.shipping_address, o.phone_number,
+    $stmt = $pdo->prepare('SELECT o.id, o.total_amount, o.discount_amount, o.promo_code, o.shipping_address, o.phone_number,
         o.payment_method, o.payment_status, o.order_status, o.created_at, COUNT(oi.id) AS item_count
         FROM orders o LEFT JOIN order_items oi ON oi.order_id = o.id
-        WHERE o.user_id = ? GROUP BY o.id, o.total_amount, o.shipping_address, o.phone_number,
+        WHERE o.user_id = ? GROUP BY o.id, o.total_amount, o.discount_amount, o.promo_code, o.shipping_address, o.phone_number,
             o.payment_method, o.payment_status, o.order_status, o.created_at
         ORDER BY o.created_at DESC');
     $stmt->execute([$_SESSION['user']['id']]);

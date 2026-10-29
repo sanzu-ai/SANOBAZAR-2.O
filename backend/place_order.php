@@ -6,6 +6,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 require_once 'db.php';
+require_once 'promo_helpers.php';
 
 $data = json_decode(file_get_contents("php://input"), true);
 
@@ -14,6 +15,7 @@ $cart = is_array($data['cart'] ?? null) ? $data['cart'] : [];
 $address = trim((string)($data['shipping_address'] ?? ''));
 $phone = trim((string)($data['phone_number'] ?? ''));
 $paymentMethod = $data['payment_method'] ?? 'cod';
+$promoCode = strtoupper(trim((string)($data['promo_code'] ?? '')));
 
 if (!$userId) {
     http_response_code(401);
@@ -42,6 +44,12 @@ if (!preg_match('/^[+0-9().\\s-]{7,30}$/', $phone) || !preg_match('/[0-9].*[0-9]
 if (!in_array($paymentMethod, ['cod', 'digital'], true)) {
     http_response_code(422);
     echo json_encode(["status" => "error", "message" => "Choose a valid payment method."]);
+    exit;
+}
+
+if ($promoCode !== '' && !preg_match('/^[A-Z0-9][A-Z0-9_-]{1,39}$/', $promoCode)) {
+    http_response_code(422);
+    echo json_encode(["status" => "error", "message" => "Enter a valid promo code."]);
     exit;
 }
 
@@ -89,12 +97,22 @@ try {
     }
 
     // Products and order totals are NPR; calculate in paisa to avoid float drift.
-    $totalAmount = intdiv($totalPaisa, 100) . '.' . str_pad((string)($totalPaisa % 100), 2, '0', STR_PAD_LEFT);
+    $subtotalPaisa = $totalPaisa;
+    $discountPaisa = 0;
+    $promo = null;
+    if ($promoCode !== '') {
+        $promo = calculatePromo($pdo, $promoCode, $subtotalPaisa, true);
+        $discountPaisa = promoAmountToPaisa($promo['discount_amount']);
+    }
+    $totalPaisa = max(0, $subtotalPaisa - $discountPaisa);
+    $subtotalAmount = promoFormatPaisa($subtotalPaisa);
+    $discountAmount = promoFormatPaisa($discountPaisa);
+    $totalAmount = promoFormatPaisa($totalPaisa);
 
     // 2. Save verified delivery/payment details with the order.
     $paymentStatus = $paymentMethod === 'digital' ? 'simulated' : 'pending';
-    $stmtOrder = $pdo->prepare("INSERT INTO orders (user_id, total_amount, shipping_address, phone_number, payment_method, payment_status, order_status) VALUES (?, ?, ?, ?, ?, ?, 'pending')");
-    $stmtOrder->execute([$userId, $totalAmount, $address, $phone, $paymentMethod, $paymentStatus]);
+    $stmtOrder = $pdo->prepare("INSERT INTO orders (user_id, total_amount, subtotal_amount, discount_amount, promo_code, shipping_address, phone_number, payment_method, payment_status, order_status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')");
+    $stmtOrder->execute([$userId, $totalAmount, $subtotalAmount, $discountAmount, $promoCode !== '' ? $promoCode : null, $address, $phone, $paymentMethod, $paymentStatus]);
     $orderId = $pdo->lastInsertId();
 
     // 3. Insert into order_items table and deduct stock
@@ -104,6 +122,11 @@ try {
     foreach ($quantities as $productId => $quantity) {
         $stmtItem->execute([$orderId, $productId, $quantity, $products[$productId]['price']]);
         $stmtUpdateStock->execute([$quantity, $productId]);
+    }
+
+    if ($promo) {
+        $incrementPromoUse = $pdo->prepare('UPDATE promo_codes SET usage_count = usage_count + 1 WHERE id = ?');
+        $incrementPromoUse->execute([$promo['id']]);
     }
 
     $clearSavedCart = $pdo->prepare('DELETE FROM cart_items WHERE user_id = ?');
@@ -116,6 +139,9 @@ try {
         "message" => "Order placed successfully!",
         "order_id" => (int)$orderId,
         "total_amount" => $totalAmount,
+        "subtotal_amount" => $subtotalAmount,
+        "discount_amount" => $discountAmount,
+        "promo_code" => $promoCode !== '' ? $promoCode : null,
         "payment_status" => $paymentStatus
     ]);
 

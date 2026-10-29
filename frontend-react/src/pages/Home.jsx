@@ -6,6 +6,9 @@ import HeroSection from '../components/HeroSection';
 import ServiceBenefits from '../components/ServiceBenefits';
 import CategorySection from '../components/CategorySection';
 import FeaturedProducts from '../components/FeaturedProducts';
+import QuickLinks from '../components/QuickLinks';
+import CollectionBanner from '../components/CollectionBanner';
+import CampaignCarousel from '../components/CampaignCarousel';
 import { useLanguage } from '../context/LanguageContext';
 
 const featuredArticles = [
@@ -32,12 +35,8 @@ export default function Home({ searchQuery }) {
   }, []);
 
   useEffect(() => {
-    const params = new URLSearchParams();
-    if (selectedCategory !== 'all') params.set('category_id', selectedCategory);
-    if (searchQuery?.trim()) params.set('q', searchQuery.trim());
-    const query = params.toString();
-
-    fetch(`${API_BASE}/get_products.php${query ? `?${query}` : ''}`)
+    let active = true;
+    fetch(`${API_BASE}/get_products.php`)
       .then(async response => {
         const data = await response.json();
         if (!response.ok || data.status === 'error') throw new Error(data.message || 'Unable to load products.');
@@ -45,15 +44,18 @@ export default function Home({ searchQuery }) {
       })
       .then(data => {
         const list = Array.isArray(data) ? data : (Array.isArray(data.data) ? data.data : (Array.isArray(data.products) ? data.products : []));
+        if (!active) return;
         setProducts(list);
         setCatalogError('');
       })
       .catch(error => {
+        if (!active) return;
         setProducts([]);
         setCatalogError(error.message || 'Products are temporarily unavailable.');
       })
-      .finally(() => setLoading(false));
-  }, [selectedCategory, searchQuery]);
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, []);
 
   const selectCategory = categoryId => {
     setSelectedCategory(String(categoryId));
@@ -63,24 +65,36 @@ export default function Home({ searchQuery }) {
   };
 
   const viewAllProducts = () => setShowAllProducts(value => !value);
-  const hasBestSellers = products.some(product => Number(product.units_sold) > 0);
+  const catalogProducts = products.filter(product => {
+    const matchesCategory = selectedCategory === 'all' || String(product.category_id) === selectedCategory;
+    const matchesSearch = !searchQuery?.trim() || `${product.name || ''} ${product.category_name || product.category || ''}`.toLowerCase().includes(searchQuery.trim().toLowerCase());
+    return matchesCategory && matchesSearch;
+  });
+  const hasBestSellers = catalogProducts.some(product => Number(product.units_sold) > 0);
   const tabs = [
     { id: 'featured', label: 'Featured Products' },
     ...(hasBestSellers ? [{ id: 'best-sellers', label: 'Best Sellers' }] : []),
     { id: 'new', label: 'New Arrivals' }
   ];
   const visibleProducts = activeTab === 'best-sellers'
-    ? [...products].sort((a, b) => Number(b.units_sold || 0) - Number(a.units_sold || 0))
+    ? [...catalogProducts].sort((a, b) => Number(b.units_sold || 0) - Number(a.units_sold || 0))
     : activeTab === 'new'
-      ? [...products].sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0) || Number(b.id) - Number(a.id))
-      : products;
+      ? [...catalogProducts].sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0) || Number(b.id) - Number(a.id))
+      : catalogProducts;
+  const categoryCounts = products.reduce((counts, product) => {
+    const id = String(product.category_id || '');
+    if (id) counts[id] = (counts[id] || 0) + 1;
+    return counts;
+  }, {});
 
   return (
     <>
-      <HeroSection products={products} />
-      <ServiceBenefits />
+      <CampaignCarousel categories={categories} />
+      <HeroSection />
       <div className="mx-auto max-w-7xl space-y-10 px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
-        <CategorySection categories={categories} onSelectCategory={selectCategory} />
+        <CategorySection categories={categories} categoryCounts={categoryCounts} onSelectCategory={selectCategory} />
+        <CollectionBanner categories={categories} />
+        <QuickLinks />
         <FeaturedProducts
           loading={loading}
           tabs={tabs}
@@ -96,15 +110,16 @@ export default function Home({ searchQuery }) {
             setShowAllProducts(false);
           }}
         />
+        <ServiceBenefits />
         <section className="space-y-4">
           <div className="flex items-end justify-between gap-3">
-            <div><p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#1766d1]">{t('Sano Bazar Journal')}</p><h2 className="mt-1 text-xl font-black tracking-tight text-[#17263d] sm:text-2xl">{t('Helpful reads')}</h2></div>
-            <Link to="/blog" className="inline-flex items-center gap-1 text-xs font-bold text-[#1766d1] hover:text-blue-800">{t('Read the blog')} <ArrowRight className="h-3.5 w-3.5" /></Link>
+            <div><p className="text-[10px] font-extrabold uppercase tracking-[0.16em] text-[#901a1c]">{t('Sano Bazar Journal')}</p><h2 className="mt-1 text-2xl font-black tracking-tight text-[#302622] sm:text-3xl">{t('Know before you buy')}</h2></div>
+            <Link to="/blog" className="inline-flex items-center gap-1 text-xs font-bold text-[#901a1c] hover:text-[#741416]">{t('Read the blog')} <ArrowRight className="h-3.5 w-3.5" /></Link>
           </div>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {featuredArticles.map(article => <Link key={article.slug} to={`/blog/${article.slug}`} className="group overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-lg">
+            {featuredArticles.map(article => <Link key={article.slug} to={`/blog/${article.slug}`} className="group overflow-hidden rounded-2xl border border-[#e9dfd4] bg-[#fffdf9] shadow-sm transition hover:-translate-y-1 hover:shadow-lg">
               <img src={article.image} alt="" loading="lazy" className="h-40 w-full object-cover transition duration-500 group-hover:scale-[1.03]" />
-              <div className="p-5"><p className="text-[10px] font-bold uppercase tracking-wider text-[#1766d1]">{t(article.category)}</p><h3 className="mt-2 line-clamp-2 text-base font-black leading-6 text-[#17263d]">{t(article.title)}</h3><p className="mt-2 line-clamp-2 text-sm leading-6 text-slate-600">{t(article.excerpt)}</p><span className="mt-4 inline-flex items-center gap-1 text-xs font-bold text-[#1766d1]">{t('Read article')} <ArrowRight className="h-3.5 w-3.5 transition group-hover:translate-x-1" /></span></div>
+              <div className="p-5"><p className="text-[10px] font-bold uppercase tracking-wider text-[#901a1c]">{t(article.category)}</p><h3 className="mt-2 line-clamp-2 text-base font-black leading-6 text-[#302622]">{t(article.title)}</h3><p className="mt-2 line-clamp-2 text-sm leading-6 text-[#716963]">{t(article.excerpt)}</p><span className="mt-4 inline-flex items-center gap-1 text-xs font-bold text-[#901a1c]">{t('Read article')} <ArrowRight className="h-3.5 w-3.5 transition group-hover:translate-x-1" /></span></div>
             </Link>)}
           </div>
         </section>

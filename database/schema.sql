@@ -38,6 +38,9 @@ CREATE TABLE IF NOT EXISTS orders (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
     total_amount DECIMAL(10,2) NOT NULL,
+    subtotal_amount DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+    discount_amount DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+    promo_code VARCHAR(40) NULL,
     shipping_address VARCHAR(500) NOT NULL,
     phone_number VARCHAR(30) NOT NULL,
     payment_method ENUM('cod', 'digital') NOT NULL DEFAULT 'cod',
@@ -45,6 +48,22 @@ CREATE TABLE IF NOT EXISTS orders (
     order_status ENUM('pending', 'processing', 'completed', 'cancelled') DEFAULT 'pending',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- Promotions are created and managed by administrators; order totals are recalculated server-side.
+CREATE TABLE IF NOT EXISTS promo_codes (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    code VARCHAR(40) NOT NULL UNIQUE,
+    discount_type ENUM('percentage', 'fixed') NOT NULL,
+    discount_value DECIMAL(10,2) NOT NULL,
+    minimum_order DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+    maximum_discount DECIMAL(10,2) NULL,
+    usage_limit INT NULL,
+    usage_count INT NOT NULL DEFAULT 0,
+    starts_at DATETIME NULL,
+    expires_at DATETIME NULL,
+    is_active TINYINT(1) NOT NULL DEFAULT 1,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 -- 5. ORDER ITEMS TABLE
@@ -88,7 +107,8 @@ INSERT IGNORE INTO categories (id, category_name) VALUES
 (3, 'Groceries'),
 (4, 'Home & Living'),
 (5, 'Books & Stationery'),
-(6, 'Beauty & Wellness');
+(6, 'Beauty & Wellness'),
+(7, 'Accessories');
 
 -- Products Seed Data. INSERT IGNORE keeps this setup script safe to rerun:
 -- it adds missing sample products without deleting orders or resetting stock.
@@ -100,7 +120,7 @@ INSERT IGNORE INTO products (id, category_id, name, price, stock_quantity, image
 (5, 2, 'Classic Denim Jacket', 3200.00, 12, 'https://images.unsplash.com/photo-1576995853123-5a10305d93c0?w=500&q=80'),
 (6, 2, 'Minimalist Leather Sneakers', 4500.00, 10, 'https://images.unsplash.com/photo-1549298916-b41d501d3772?w=500&q=80'),
 (7, 2, 'Cotton Casual Hoodie', 2200.00, 25, 'https://images.unsplash.com/photo-1556905055-8f358a7a47b2?w=500&q=80'),
-(8, 2, 'UV-Protected Sunglasses', 1500.00, 18, 'https://images.unsplash.com/photo-1511499767150-a48a237f0083?w=500&q=80'),
+(8, 7, 'UV-Protected Sunglasses', 1500.00, 18, 'https://images.unsplash.com/photo-1511499767150-a48a237f0083?w=500&q=80'),
 (9, 3, 'Organic Green Tea (200g)', 450.00, 30, 'https://images.unsplash.com/photo-1597481499750-3e6b22637e12?w=500&q=80'),
 (10, 3, 'Extra Virgin Olive Oil (1L)', 1250.00, 14, 'https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=500&q=80'),
 (11, 3, 'Pure Himalayan Honey (500g)', 850.00, 3, 'https://images.unsplash.com/photo-1587049352847-81a56d773cae?w=500&q=80'),

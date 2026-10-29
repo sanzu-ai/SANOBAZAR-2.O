@@ -1,17 +1,19 @@
-import { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
-import { CheckCircle2, ShoppingBag, Truck, MapPin, Phone, User, CreditCard, ArrowLeft, AlertCircle } from 'lucide-react';
+import { AlertCircle, ArrowLeft, CheckCircle2, CreditCard, MapPin, Phone, ShoppingBag, Truck, UserRound } from 'lucide-react';
 import { API_BASE } from '../lib/api';
 import { formatNPR, toPaisa } from '../lib/currency';
 import { useLanguage } from '../context/LanguageContext';
 
+const fieldClass = 'mt-1.5 w-full rounded border border-[#dcd7d2] bg-white px-3 py-3 text-sm text-[#302622] outline-none transition placeholder:text-[#aaa19a] hover:border-[#b8aea8] focus:border-[#901a1c] focus:ring-2 focus:ring-[#901a1c]/10';
+
 export default function Checkout() {
-  const { cart, totalPrice, clearCart } = useCart();
+  const { cart, totalItems, totalPrice, clearCart, setIsCartOpen, appliedPromo, promoDiscount, discountedTotal, promoApplying, promoError, applyPromoCode, removePromoCode, resetPromoError } = useCart();
   const navigate = useNavigate();
+  const location = useLocation();
   const { t } = useLanguage();
 
-  // Initialize current user safely
   const [currentUser] = useState(() => {
     try {
       const saved = localStorage.getItem('sanobazar_user');
@@ -24,22 +26,19 @@ export default function Checkout() {
   const [address, setAddress] = useState('');
   const [phone, setPhone] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('cod');
+  const [promoCode, setPromoCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [orderSuccess, setOrderSuccess] = useState(null);
 
-  // Redirect if user is unauthenticated
   useEffect(() => {
-    if (!currentUser) {
-      navigate('/login');
-    }
+    if (!currentUser) navigate('/login');
   }, [currentUser, navigate]);
 
   if (!currentUser) return null;
 
-  const handlePlaceOrder = async (e) => {
-    e.preventDefault();
-
+  const handlePlaceOrder = async event => {
+    event.preventDefault();
     if (cart.length === 0) {
       setError(t('Your cart is empty.'));
       return;
@@ -53,10 +52,8 @@ export default function Checkout() {
         shipping_address: address,
         phone_number: phone,
         payment_method: paymentMethod,
-        cart: cart.map(item => ({
-          id: item.id,
-          quantity: item.quantity
-        }))
+        promo_code: appliedPromo?.code || '',
+        cart: cart.map(item => ({ id: item.id, quantity: item.quantity }))
       };
 
       const response = await fetch(`${API_BASE}/place_order.php`, {
@@ -67,11 +64,13 @@ export default function Checkout() {
       });
 
       const data = await response.json();
-
       if (response.ok && data.status === 'success' && data.order_id) {
         setOrderSuccess({
           id: data.order_id,
           amount: Number(data.total_amount),
+          subtotal: Number(data.subtotal_amount || data.total_amount),
+          discount: Number(data.discount_amount || 0),
+          promoCode: data.promo_code || '',
           address,
           paymentMethod: paymentMethod === 'cod' ? 'Cash on Delivery' : 'Simulated Digital Wallet',
           paymentStatus: data.payment_status
@@ -88,126 +87,93 @@ export default function Checkout() {
     }
   };
 
-  // SUCCESS SCREEN
   if (orderSuccess) {
     return (
-      <div className="max-w-2xl mx-auto px-4 py-16 text-center space-y-6">
-        <div className="bg-white rounded-3xl p-8 sm:p-12 border border-gray-100 shadow-xl space-y-6">
-          <div className="w-16 h-16 bg-emerald-100 text-[#087f5b] rounded-full flex items-center justify-center mx-auto">
-            <CheckCircle2 className="w-10 h-10" />
+      <div className="mx-auto max-w-2xl px-4 py-14 text-center sm:px-6 sm:py-20">
+        <section className="border border-[#e9dfd5] bg-white p-7 sm:p-12">
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-[#f9eeee] text-[#901a1c]">
+            <CheckCircle2 className="h-9 w-9" aria-hidden="true" />
           </div>
-
-          <div className="space-y-2">
-            <h1 className="text-3xl font-black text-gray-900">{t('Order Placed Successfully!')}</h1>
-            <p className="text-sm text-gray-500">{t('Thank you for shopping with SANOBAZAR.')}</p>
-          </div>
-
-          <div className="bg-gray-50 rounded-2xl p-6 text-left space-y-3 text-xs border border-gray-100">
-            <div className="flex justify-between">
-              <span className="text-gray-500">{t('Order ID')}:</span>
-              <span className="font-bold text-gray-900">#{orderSuccess.id}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-500">{t('Order Total')}:</span>
-              <span className="font-extrabold text-gray-900">{formatNPR(orderSuccess.amount)}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-500">{t('Delivery Address')}:</span>
-              <span className="font-bold text-gray-900 truncate max-w-[200px]">{orderSuccess.address}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-500">{t('Payment Method')}:</span>
-              <span className="font-bold text-gray-900">{orderSuccess.paymentMethod}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-500">{t('Payment Status')}:</span>
-              <span className="font-bold capitalize text-gray-900">{t(orderSuccess.paymentStatus)}</span>
-            </div>
-          </div>
-
-          <Link
-            to="/"
-            className="inline-flex items-center justify-center gap-2 w-full bg-[#087f5b] hover:bg-[#066347] text-white py-3 rounded-xl font-bold text-xs shadow-md transition"
-          >
-            <ShoppingBag className="w-4 h-4" />
-            {t('Continue Shopping')}
+          <h1 className="mt-5 text-2xl font-bold text-[#302622] sm:text-3xl">{t('Order Placed Successfully!')}</h1>
+          <p className="mt-2 text-sm text-[#716963]">{t('Thank you for shopping with SANOBAZAR.')}</p>
+          <dl className="mt-8 divide-y divide-[#eee5dc] border-y border-[#eee5dc] text-left text-sm">
+            <div className="flex justify-between gap-5 py-3"><dt className="text-[#716963]">{t('Order ID')}</dt><dd className="font-semibold text-[#302622]">#{orderSuccess.id}</dd></div>
+            <div className="flex justify-between gap-5 py-3"><dt className="text-[#716963]">{t('Order Total')}</dt><dd className="font-bold text-[#901a1c]">{formatNPR(orderSuccess.amount)}</dd></div>
+            {orderSuccess.discount > 0 && <div className="flex justify-between gap-5 py-3"><dt className="text-[#716963]">{t('Promo discount')} ({orderSuccess.promoCode})</dt><dd className="font-semibold text-emerald-700">−{formatNPR(orderSuccess.discount)}</dd></div>}
+            <div className="flex justify-between gap-5 py-3"><dt className="text-[#716963]">{t('Delivery Address')}</dt><dd className="max-w-[60%] text-right font-medium text-[#302622]">{orderSuccess.address}</dd></div>
+            <div className="flex justify-between gap-5 py-3"><dt className="text-[#716963]">{t('Payment Method')}</dt><dd className="font-medium text-[#302622]">{t(orderSuccess.paymentMethod)}</dd></div>
+            <div className="flex justify-between gap-5 py-3"><dt className="text-[#716963]">{t('Payment Status')}</dt><dd className="font-medium capitalize text-[#302622]">{t(orderSuccess.paymentStatus)}</dd></div>
+          </dl>
+          <Link to="/" className="mt-7 inline-flex w-full items-center justify-center gap-2 rounded-md bg-[#901a1c] px-5 py-3.5 text-sm font-bold text-white transition hover:bg-[#741416]">
+            <ShoppingBag className="h-4 w-4" aria-hidden="true" />{t('Continue Shopping')}
           </Link>
-        </div>
+        </section>
       </div>
     );
   }
 
-  // EMPTY CART GUARD
   if (cart.length === 0) {
     return (
-      <div className="max-w-2xl mx-auto px-4 py-16 text-center space-y-6">
-        <div className="bg-white rounded-3xl p-12 border border-gray-100 shadow-sm space-y-4">
-          <ShoppingBag className="w-16 h-16 text-gray-300 mx-auto" />
-          <h2 className="text-xl font-bold text-gray-900">{t('Your cart is empty')}</h2>
-          <p className="text-xs text-gray-500">{t('Add products to your cart before proceeding to checkout.')}</p>
-          <Link
-            to="/"
-            className="inline-flex items-center gap-2 bg-[#087f5b] text-white px-6 py-2.5 rounded-full font-bold text-xs shadow-md"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Browse Catalog
+      <div className="mx-auto max-w-2xl px-4 py-14 text-center sm:px-6 sm:py-20">
+        <section className="border border-[#e9dfd5] bg-white p-8 sm:p-12">
+          <ShoppingBag className="mx-auto h-14 w-14 text-[#c7b9ac]" aria-hidden="true" />
+          <h1 className="mt-5 text-xl font-bold text-[#302622]">{t('Your cart is empty')}</h1>
+          <p className="mt-2 text-sm text-[#716963]">{t('Add products to your cart before proceeding to checkout.')}</p>
+          <Link to="/shop" className="mt-6 inline-flex items-center gap-2 rounded-md bg-[#901a1c] px-6 py-3 text-sm font-bold text-white transition hover:bg-[#741416]">
+            <ArrowLeft className="h-4 w-4" aria-hidden="true" />{t('Browse Catalog')}
           </Link>
-        </div>
+        </section>
       </div>
     );
   }
 
-  // MAIN CHECKOUT FORM
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-      
-      {/* Page Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <Link to="/" className="inline-flex items-center gap-1.5 text-xs font-bold text-gray-500 hover:text-[#087f5b] mb-2">
-            <ArrowLeft className="w-3.5 h-3.5" /> {t('Back to Store')}
-          </Link>
-          <h1 className="text-2xl sm:text-3xl font-black text-gray-900 tracking-tight">{t('Checkout')}</h1>
-        </div>
+    <div className="mx-auto max-w-[1240px] px-4 py-7 text-[#302622] sm:px-6 sm:py-9 lg:px-8">
+      <button type="button" onClick={() => {
+        if (location.state?.cartReturnTo) {
+          setIsCartOpen(true);
+          navigate(location.state.cartReturnTo);
+        } else {
+          navigate('/shop');
+        }
+      }} className="mb-4 inline-flex items-center gap-2 text-sm font-medium text-[#716963] transition hover:text-[#901a1c]">
+        <ArrowLeft className="h-4 w-4" aria-hidden="true" />{t(location.state?.cartReturnTo ? 'Back to cart' : 'Back to shopping')}
+      </button>
+      <div className="mb-7 border-b border-[#e9dfd5] pb-5">
+        <p className="text-xs font-bold uppercase tracking-[.16em] text-[#901a1c]">{t('Secure checkout')}</p>
+        <h1 className="mt-1.5 text-3xl font-bold tracking-tight text-[#302622] sm:text-4xl">{t('Checkout')}</h1>
+        <p className="mt-2 text-sm text-[#716963]">{t('Complete your delivery and payment details.')}</p>
       </div>
 
-      {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 text-xs font-semibold p-4 rounded-2xl flex items-center gap-2">
-          <AlertCircle className="w-4 h-4 text-red-500 shrink-0" />
-          <span>{error}</span>
-        </div>
-      )}
+      <form onSubmit={handlePlaceOrder} className="grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_440px] lg:gap-12">
+        <div className="space-y-8">
+          {error && (
+            <div role="alert" className="flex items-center gap-2 border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+              <AlertCircle className="h-4 w-4 shrink-0 text-red-500" aria-hidden="true" /><span>{error}</span>
+            </div>
+          )}
 
-      {/* Main 2-Column Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        
-        {/* Left Column: Shipping & Payment Details */}
-        <form onSubmit={handlePlaceOrder} className="lg:col-span-7 space-y-6">
-          
-          {/* Contact & Address Section */}
-          <div className="bg-white rounded-3xl p-6 sm:p-8 border border-gray-100 shadow-sm space-y-4">
-            <h2 className="text-base font-bold text-gray-900 flex items-center gap-2">
-              <MapPin className="w-4 h-4 text-[#087f5b]" /> Delivery Details
+          <section className="border-b border-[#e9dfd5] pb-7">
+            <h2 className="flex items-center gap-3 text-base font-bold text-[#302622]">
+              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#f9eeee] text-xs font-bold text-[#901a1c]">1</span>
+              {t('General Information')}
             </h2>
-
-            <div className="space-y-3">
-              <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1">{t('Customer Name')}</label>
+            <div className="mt-5 grid gap-4 sm:grid-cols-2">
+              <label className="block text-sm font-medium text-[#514640]">
+                {t('Full Name')}
                 <div className="relative">
-                  <User className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                  <input
-                    type="text"
-                    disabled
-                    value={currentUser.full_name || currentUser.name || 'Customer'}
-                    className="w-full pl-9 pr-4 py-2.5 bg-gray-100 border border-gray-200 rounded-xl text-xs font-semibold text-gray-600"
-                  />
+                  <UserRound className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#978b84]" aria-hidden="true" />
+                  <input type="text" readOnly value={currentUser.full_name || currentUser.name || 'Customer'} className={`${fieldClass} pl-10`} />
                 </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1">{t('Phone Number')}</label>
+              </label>
+              <label className="block text-sm font-medium text-[#514640]">
+                {t('Email')}
+                <input type="email" readOnly value={currentUser.email || ''} placeholder={t('Email on your account')} className={fieldClass} />
+              </label>
+              <label className="block text-sm font-medium text-[#514640] sm:col-span-2">
+                {t('Phone Number')} <span className="text-[#901a1c]">*</span>
                 <div className="relative">
-                  <Phone className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <Phone className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#978b84]" aria-hidden="true" />
                   <input
                     type="tel"
                     required
@@ -216,133 +182,113 @@ export default function Checkout() {
                     pattern="[+0-9(). -]{7,30}"
                     placeholder="98XXXXXXXX"
                     value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    className="w-full pl-9 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs text-gray-900 focus:outline-none focus:border-[#087f5b] focus:bg-white transition"
+                    onChange={event => setPhone(event.target.value)}
+                    className={`${fieldClass} pl-10`}
                   />
                 </div>
-              </div>
+              </label>
+            </div>
+          </section>
 
-              <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1">{t('Shipping Address')}</label>
+          <section className="border-b border-[#e9dfd5] pb-7">
+            <h2 className="flex items-center gap-3 text-base font-bold text-[#302622]">
+              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#f9eeee] text-xs font-bold text-[#901a1c]">2</span>
+              {t('Delivery Address')}
+            </h2>
+            <label className="mt-5 block text-sm font-medium text-[#514640]">
+              {t('Shipping Address')} <span className="text-[#901a1c]">*</span>
+              <div className="relative">
+                <MapPin className="pointer-events-none absolute left-3 top-4 h-4 w-4 text-[#978b84]" aria-hidden="true" />
                 <textarea
                   required
                   maxLength={500}
-                  rows="3"
+                  rows={4}
                   placeholder={t('Street address, City, Ward No. (e.g. New Baneshwor, Kathmandu)')}
                   value={address}
-                  onChange={(e) => setAddress(e.target.value)}
-                  className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl text-xs text-gray-900 focus:outline-none focus:border-[#087f5b] focus:bg-white transition"
+                  onChange={event => setAddress(event.target.value)}
+                  className={`${fieldClass} resize-y pl-10`}
                 />
               </div>
-            </div>
-          </div>
+            </label>
+          </section>
 
-          {/* Payment Method Section */}
-          <div className="bg-white rounded-3xl p-6 sm:p-8 border border-gray-100 shadow-sm space-y-4">
-            <h2 className="text-base font-bold text-gray-900 flex items-center gap-2">
-              <CreditCard className="w-4 h-4 text-[#087f5b]" /> Payment Method
+          <section>
+            <h2 className="flex items-center gap-3 text-base font-bold text-[#302622]">
+              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#f9eeee] text-xs font-bold text-[#901a1c]">3</span>
+              {t('Payment Methods')}
             </h2>
-
-            <div className="grid grid-cols-2 gap-3">
-              <label
-                className={`p-4 border rounded-2xl cursor-pointer flex flex-col justify-between gap-2 transition ${
-                  paymentMethod === 'cod'
-                    ? 'border-[#087f5b] bg-emerald-50/50 text-[#087f5b]'
-                    : 'border-gray-200 bg-white text-gray-600'
-                }`}
-              >
-                <div className="flex items-center justify-between">
-                  <Truck className="w-5 h-5" />
-                  <input
-                    type="radio"
-                    name="payment"
-                    value="cod"
-                    checked={paymentMethod === 'cod'}
-                    onChange={() => setPaymentMethod('cod')}
-                    className="accent-[#087f5b]"
-                  />
-                </div>
-                <div>
-                  <p className="font-bold text-xs">{t('Cash on Delivery')}</p>
-                  <p className="text-[10px] opacity-75">{t('Pay when order arrives')}</p>
-                </div>
+            <div className="mt-5 grid gap-3 sm:grid-cols-2">
+              <label className={`flex min-h-28 cursor-pointer flex-col justify-between border p-4 transition ${paymentMethod === 'cod' ? 'border-[#901a1c] bg-[#fffafa]' : 'border-[#e9dfd5] bg-white hover:border-[#c9beba]'}`}>
+                <span className="flex items-center justify-between text-[#901a1c]">
+                  <Truck className="h-6 w-6" aria-hidden="true" />
+                  <input type="radio" name="payment" value="cod" checked={paymentMethod === 'cod'} onChange={() => setPaymentMethod('cod')} className="h-4 w-4 accent-[#901a1c]" />
+                </span>
+                <span className="mt-4">
+                  <span className="block text-sm font-semibold text-[#302622]">{t('Cash on Delivery')}</span>
+                  <span className="mt-1 block text-xs text-[#827872]">{t('Pay when order arrives')}</span>
+                </span>
               </label>
-
-              <label
-                className={`p-4 border rounded-2xl cursor-pointer flex flex-col justify-between gap-2 transition ${
-                  paymentMethod === 'digital'
-                    ? 'border-[#087f5b] bg-emerald-50/50 text-[#087f5b]'
-                    : 'border-gray-200 bg-white text-gray-600'
-                }`}
-              >
-                <div className="flex items-center justify-between">
-                  <CreditCard className="w-5 h-5" />
-                  <input
-                    type="radio"
-                    name="payment"
-                    value="digital"
-                    checked={paymentMethod === 'digital'}
-                    onChange={() => setPaymentMethod('digital')}
-                    className="accent-[#087f5b]"
-                  />
-                </div>
-                <div>
-                  <p className="font-bold text-xs">{t('Digital Wallet')}</p>
-                  <p className="text-[10px] opacity-75">{t('eSewa / Khalti Simulated')}</p>
-                </div>
+              <label className={`flex min-h-28 cursor-pointer flex-col justify-between border p-4 transition ${paymentMethod === 'digital' ? 'border-[#901a1c] bg-[#fffafa]' : 'border-[#e9dfd5] bg-white hover:border-[#c9beba]'}`}>
+                <span className="flex items-center justify-between text-[#901a1c]">
+                  <CreditCard className="h-6 w-6" aria-hidden="true" />
+                  <input type="radio" name="payment" value="digital" checked={paymentMethod === 'digital'} onChange={() => setPaymentMethod('digital')} className="h-4 w-4 accent-[#901a1c]" />
+                </span>
+                <span className="mt-4">
+                  <span className="block text-sm font-semibold text-[#302622]">{t('Digital Wallet')}</span>
+                  <span className="mt-1 block text-xs text-[#827872]">{t('eSewa / Khalti Simulated')}</span>
+                </span>
               </label>
             </div>
-          </div>
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-[#087f5b] hover:bg-[#066347] text-white py-3.5 rounded-2xl font-bold text-sm shadow-md transition active:scale-98 disabled:opacity-50"
-          >
-            {loading ? t('Processing Transaction...') : `${t('Confirm Order')} (${formatNPR(totalPrice)})`}
-          </button>
-        </form>
-
-        {/* Right Column: Order Items Summary */}
-        <div className="lg:col-span-5">
-          <div className="bg-white rounded-3xl p-6 sm:p-8 border border-gray-100 shadow-sm space-y-4 sticky top-24">
-            <h2 className="text-base font-bold text-gray-900 border-b border-gray-100 pb-3">
-              {t('Order Summary')} ({cart.length} {t('items')})
-            </h2>
-
-            <div className="max-h-72 overflow-y-auto space-y-3 pr-1">
-              {cart.map(item => (
-                <div key={item.id} className="flex items-center gap-3 bg-gray-50 p-2.5 rounded-xl">
-                  <img src={item.image_url} alt={item.name} className="w-12 h-12 object-cover rounded-lg bg-white" />
-                  <div className="flex-1 min-w-0">
-                    <h4 className="font-bold text-xs text-gray-900 truncate">{item.name}</h4>
-                    <p className="text-[11px] text-gray-500">{t('Qty')}: {item.quantity}</p>
-                  </div>
-                  <span className="font-extrabold text-xs text-[#087f5b]">
-                    {formatNPR((toPaisa(item.price) * item.quantity) / 100)}
-                  </span>
-                </div>
-              ))}
-            </div>
-
-            <div className="border-t border-gray-100 pt-4 space-y-2 text-xs">
-              <div className="flex justify-between text-gray-600">
-                <span>{t('Subtotal')}</span>
-                <span>{formatNPR(totalPrice)}</span>
-              </div>
-              <div className="flex justify-between text-gray-600">
-                <span>{t('Delivery Charge')}</span>
-                <span className="text-emerald-600 font-bold">{t('FREE')}</span>
-              </div>
-              <div className="flex justify-between text-base font-black text-gray-900 pt-2 border-t border-gray-100">
-                <span>{t('Total')}</span>
-                <span className="text-[#087f5b]">{formatNPR(totalPrice)}</span>
-              </div>
-            </div>
-          </div>
+          </section>
         </div>
 
-      </div>
+        <aside className="h-fit border border-[#e9dfd5] bg-white lg:sticky lg:top-6">
+          <div className="border-b border-[#e9dfd5] px-5 py-4 sm:px-6">
+            <h2 className="text-base font-bold text-[#302622]">{t('Order Summary')}</h2>
+            <p className="mt-1 text-xs text-[#827872]">{totalItems} {t('item(s)')}</p>
+          </div>
+          <div className="max-h-[360px] divide-y divide-[#eee5dc] overflow-y-auto px-5 sm:px-6">
+            {cart.map(item => (
+              <div key={item.id} className="flex items-center gap-3 py-4">
+                <div className="relative shrink-0">
+                  <img src={item.image_url} alt={t(item.name)} className="h-[68px] w-[68px] rounded-md bg-[#f7f6f4] object-contain p-1.5" />
+                  <span className="absolute -right-2 -top-2 flex h-5 min-w-5 items-center justify-center rounded-full bg-[#901a1c] px-1 text-[10px] font-bold text-white">{item.quantity}</span>
+                </div>
+                <div className="min-w-0 flex-1">
+                  <h3 className="line-clamp-2 text-sm font-medium leading-5 text-[#302622]">{t(item.name)}</h3>
+                  <p className="mt-1 text-xs text-[#827872]">{formatNPR(item.price)} × {item.quantity}</p>
+                </div>
+                <span className="shrink-0 text-sm font-semibold text-[#302622]">{formatNPR((toPaisa(item.price) * item.quantity) / 100)}</span>
+              </div>
+            ))}
+          </div>
+          <div className="border-t border-[#e9dfd5] px-5 py-5 sm:px-6">
+            <div className="mb-5">
+              {appliedPromo ? <div className="flex items-center justify-between gap-3 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-3 text-xs">
+                <span className="font-semibold text-emerald-800">{t('Promo code applied')}: {appliedPromo.code}</span>
+                <button type="button" onClick={removePromoCode} className="font-bold text-[#901a1c] hover:underline">{t('Remove')}</button>
+              </div> : <>
+                <label htmlFor="checkout-promo-code" className="sr-only">{t('Promo code')}</label>
+                <div className="flex gap-2">
+                  <input id="checkout-promo-code" value={promoCode} onChange={event => { setPromoCode(event.target.value); resetPromoError(); }} placeholder={t('Enter promo code')} className="h-11 min-w-0 flex-1 rounded border border-[#dcd7d2] px-3 text-sm uppercase text-[#302622] outline-none placeholder:normal-case placeholder:text-[#aaa19a] focus:border-[#901a1c]" />
+                  <button type="button" disabled={promoApplying} onClick={async () => { try { const promo = await applyPromoCode(promoCode); if (promo) setPromoCode(''); } catch { /* The shared promo error is shown below. */ } }} className="h-11 rounded bg-[#f4f1ee] px-4 text-xs font-bold uppercase tracking-wide text-[#514640] transition hover:bg-[#ece6e1] disabled:cursor-wait disabled:opacity-60">{promoApplying ? t('Checking…') : t('Apply')}</button>
+                </div>
+                {promoError && <p role="alert" className="mt-2 text-xs text-[#901a1c]">{t(promoError)}</p>}
+              </>}
+            </div>
+            <div className="space-y-3 text-sm">
+              <p className="flex justify-between gap-4 text-[#655b55]"><span>{t('Subtotal')}</span><span>{formatNPR(totalPrice)}</span></p>
+              {appliedPromo && <p className="flex justify-between gap-4 text-emerald-700"><span>{t('Promo discount')}</span><span className="font-semibold">−{formatNPR(promoDiscount)}</span></p>}
+              <p className="flex justify-between gap-4 text-[#655b55]"><span>{t('Delivery Charge')}</span><span className="font-semibold text-emerald-700">{t('FREE')}</span></p>
+              <p className="flex justify-between gap-4 border-t border-[#eee5dc] pt-3 text-base font-bold text-[#302622]"><span>{t('Total')}</span><span>{formatNPR(discountedTotal)}</span></p>
+            </div>
+            <button type="submit" disabled={loading} className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-md bg-[#901a1c] px-5 py-3.5 text-sm font-bold text-white transition hover:bg-[#741416] disabled:cursor-wait disabled:opacity-60">
+              {loading ? t('Processing Transaction...') : `${t('Place Order')} · ${formatNPR(discountedTotal)}`}
+            </button>
+            <p className="mt-3 text-center text-xs leading-5 text-[#827872]">{t('Prices and availability are checked again when you place the order.')}</p>
+          </div>
+        </aside>
+      </form>
     </div>
   );
 }

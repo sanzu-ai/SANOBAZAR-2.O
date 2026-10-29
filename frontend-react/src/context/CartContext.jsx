@@ -49,6 +49,7 @@ export function CartProvider({ children }) {
   const [cart, setCart] = useState(readStoredCart);
   const cartRef = useRef(cart);
   const syncGenerationRef = useRef(0);
+  const promoGenerationRef = useRef(0);
   const saveGenerationRef = useRef(0);
   const saveQueueRef = useRef(Promise.resolve());
   const accountIdRef = useRef(null);
@@ -57,6 +58,9 @@ export function CartProvider({ children }) {
   const [cartSyncReady, setCartSyncReady] = useState(false);
   const [cartSyncing, setCartSyncing] = useState(false);
   const [cartSyncError, setCartSyncError] = useState('');
+  const [appliedPromo, setAppliedPromo] = useState(null);
+  const [promoApplying, setPromoApplying] = useState(false);
+  const [promoError, setPromoError] = useState('');
   const [wishlistIds, setWishlistIds] = useState(() => {
     try {
       const saved = JSON.parse(localStorage.getItem('sanobazar_wishlist') || '[]');
@@ -228,8 +232,63 @@ export function CartProvider({ children }) {
     return () => window.clearTimeout(timer);
   }, [cart, accountId, cartSyncReady]);
 
+  const clearPromoCode = () => {
+    promoGenerationRef.current += 1;
+    setAppliedPromo(null);
+    setPromoError('');
+    setPromoApplying(false);
+  };
+
+  const applyPromoCode = useCallback(async code => {
+    const normalizedCode = String(code || '').trim().toUpperCase();
+    if (!normalizedCode) {
+      const error = new Error('Enter a promo code first.');
+      setPromoError(error.message);
+      throw error;
+    }
+    if (!cart.length) {
+      const error = new Error('Your cart is empty.');
+      setPromoError(error.message);
+      throw error;
+    }
+
+    const requestGeneration = ++promoGenerationRef.current;
+    setPromoApplying(true);
+    setPromoError('');
+    try {
+      const response = await fetch(`${API_BASE}/validate_promo.php`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          promo_code: normalizedCode,
+          cart: cart.map(item => ({ id: item.id, quantity: item.quantity }))
+        })
+      });
+      const data = await response.json();
+      if (!response.ok || data.status !== 'success' || !data.promo) {
+        throw new Error(data.message || 'This promo code could not be applied.');
+      }
+      if (requestGeneration !== promoGenerationRef.current) return null;
+      setAppliedPromo(data.promo);
+      setPromoError('');
+      return data.promo;
+    } catch (error) {
+      if (requestGeneration !== promoGenerationRef.current) throw error;
+      setAppliedPromo(null);
+      setPromoError(error.message || 'This promo code could not be applied.');
+      throw error;
+    } finally {
+      if (requestGeneration === promoGenerationRef.current) setPromoApplying(false);
+    }
+  }, [cart]);
+
+  const removePromoCode = () => clearPromoCode();
+  const resetPromoError = () => setPromoError('');
+
   const addToCart = product => {
     if (cartSyncingRef.current) return;
+    clearPromoCode();
     setCart(previous => {
       const existing = previous.find(item => Number(item.id) === Number(product.id));
       const available = Math.max(0, Number(product.stock_quantity) || 0);
@@ -249,11 +308,13 @@ export function CartProvider({ children }) {
 
   const removeFromCart = productId => {
     if (cartSyncingRef.current) return;
+    clearPromoCode();
     setCart(previous => previous.filter(item => Number(item.id) !== Number(productId)));
   };
 
   const updateQuantity = (productId, delta) => {
     if (cartSyncingRef.current) return;
+    clearPromoCode();
     setCart(previous => previous.map(item => {
       if (Number(item.id) !== Number(productId)) return item;
       const newQuantity = item.quantity + delta;
@@ -266,7 +327,10 @@ export function CartProvider({ children }) {
     }).filter(Boolean));
   };
 
-  const clearCart = () => setCart([]);
+  const clearCart = () => {
+    setCart([]);
+    clearPromoCode();
+  };
   const toggleWishlist = productId => {
     setWishlistIds(previous => previous.includes(productId)
       ? previous.filter(id => id !== productId)
@@ -276,6 +340,8 @@ export function CartProvider({ children }) {
   const totalItems = cart.reduce((sum, item) => sum + Number(item.quantity), 0);
   const totalPaisa = cart.reduce((sum, item) => sum + (toPaisa(item.price) * Number(item.quantity)), 0);
   const totalPrice = totalPaisa / 100;
+  const promoDiscount = Math.min(totalPrice, Math.max(0, Number(appliedPromo?.discount_amount) || 0));
+  const discountedTotal = Math.max(0, totalPrice - promoDiscount);
 
   return (
     <CartContext.Provider value={{
@@ -287,6 +353,14 @@ export function CartProvider({ children }) {
       totalItems,
       totalPaisa,
       totalPrice,
+      appliedPromo,
+      promoDiscount,
+      discountedTotal,
+      promoApplying,
+      promoError,
+      applyPromoCode,
+      removePromoCode,
+      resetPromoError,
       wishlistIds,
       wishlistCount: wishlistIds.length,
       toggleWishlist,

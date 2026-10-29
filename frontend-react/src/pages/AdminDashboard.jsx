@@ -6,7 +6,6 @@ import {
   AlertTriangle, 
   Plus, 
   Search, 
-  RefreshCw, 
   Pencil,
   Trash2, 
   X, 
@@ -24,11 +23,11 @@ export default function AdminDashboard() {
     total_users: 0,
     low_stock_count: 0
   });
+  const [monthlyTrend, setMonthlyTrend] = useState([]);
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [categoryError, setCategoryError] = useState('');
   const [recentOrders, setRecentOrders] = useState([]);
-  const [lowStockItems, setLowStockItems] = useState([]);
   const [loading, setLoading] = useState(true);
 
   // Search and filter for product table
@@ -51,9 +50,13 @@ export default function AdminDashboard() {
   // Fetch data without changing React state, so the initial effect can update
   // the UI from the completed network request instead of synchronously.
   const fetchDashboardData = useCallback(async () => {
-    const [statsRes, prodRes] = await Promise.all([
+    const [statsRes, prodRes, analyticsData] = await Promise.all([
       fetch(`${API_BASE}/get_admin_stats.php`, { credentials: 'include' }),
-      fetch(`${API_BASE}/admin_products.php`, { credentials: 'include' })
+      fetch(`${API_BASE}/admin_products.php`, { credentials: 'include' }),
+      fetch(`${API_BASE}/get_analytics.php`, { credentials: 'include' })
+        .then(response => response.json())
+        .then(data => data.status === 'success' ? data.data : null)
+        .catch(() => null)
     ]);
     const [statsData, prodData] = await Promise.all([
       statsRes.json(),
@@ -66,7 +69,7 @@ export default function AdminDashboard() {
 
     return {
       stats: statsData.stats || statsData,
-      lowStockItems: statsData.low_stock_items || [],
+      monthlyTrend: Array.isArray(analyticsData?.monthly_trend) ? analyticsData.monthly_trend : [],
       recentOrders: statsData.recent_orders || [],
       products: Array.isArray(prodData) ? prodData : (Array.isArray(prodData.data) ? prodData.data : [])
     };
@@ -74,7 +77,7 @@ export default function AdminDashboard() {
 
   const applyDashboardData = useCallback((data) => {
     setStats(data.stats);
-    setLowStockItems(data.lowStockItems);
+    setMonthlyTrend(data.monthlyTrend);
     setRecentOrders(data.recentOrders);
     setProducts(data.products);
   }, []);
@@ -277,27 +280,38 @@ export default function AdminDashboard() {
     const matchesCat = selectedCategory === 'all' || String(p.category_id) === String(selectedCategory);
     return matchesSearch && matchesCat;
   });
+  const maxMonthRevenue = Math.max(...monthlyTrend.map(month => Number(month.revenue) || 0), 1);
+  const chartPoints = monthlyTrend.map((month, index) => {
+    const x = monthlyTrend.length < 2 ? 300 : 24 + (index * 552) / (monthlyTrend.length - 1);
+    const revenue = Number(month.revenue) || 0;
+    const y = 150 - (revenue / maxMonthRevenue) * 120;
+    return { x, y, month };
+  });
+  const linePoints = chartPoints.map(point => `${point.x},${point.y}`).join(' ');
+  const areaPath = chartPoints.length
+    ? `M ${chartPoints[0].x},160 L ${chartPoints.map(point => `${point.x},${point.y}`).join(' L ')} L ${chartPoints[chartPoints.length - 1].x},160 Z`
+    : '';
 
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="animate-spin rounded-full h-10 w-10 border-4 border-brand border-t-transparent"></div>
+        <div className="h-10 w-10 animate-spin rounded-full border-4 border-[#e6b65a] border-t-transparent"></div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 text-[#241a17] sm:space-y-7">
       
       {/* Top Bar Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Dashboard Overview</h1>
-          <p className="text-sm text-gray-500">Monitor store metrics, manage inventory, and view active orders.</p>
+          <h1 className="text-3xl font-black tracking-tight text-[#211712]">Dashboard</h1>
+          <p className="mt-1 text-sm text-[#81756d]">Here’s how Sano Bazar is doing today.</p>
         </div>
         <button
           onClick={openAddProductModal}
-          className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-brand text-white font-semibold rounded-xl hover:bg-brandDark transition-all shadow-sm shadow-brand/20 shrink-0"
+          className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-[#ae292d] px-4 py-2.5 font-semibold text-white shadow-sm transition-all hover:bg-[#912126]"
         >
           <Plus className="w-4 h-4" />
           <span>Add New Product</span>
@@ -305,139 +319,110 @@ export default function AdminDashboard() {
       </div>
 
       {/* Metric Cards (4 Grid) */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         
         {/* Total Revenue */}
-        <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between">
+        <div className="flex items-center justify-between rounded-[22px] border border-[#e8ded2] bg-[#fffdf9] p-5">
           <div>
-            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Total Revenue</p>
-            <h3 className="text-2xl font-extrabold text-gray-900 mt-1">
+            <p className="text-xs font-medium text-[#81756d]">Revenue</p>
+            <h3 className="mt-1 text-2xl font-black text-[#211712]">
               {formatNPR(stats.total_revenue)}
             </h3>
-            <span className="inline-block mt-2 text-[11px] font-medium text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">
-              Live DB Synced
-            </span>
+            <span className="mt-1 inline-block text-[11px] font-medium text-[#417b4d]">{new Date().toLocaleDateString('en', { month: 'short' })} · completed orders</span>
           </div>
-          <div className="w-12 h-12 rounded-xl bg-emerald-50 text-brand flex items-center justify-center">
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#f6eddb] text-[#9b7227]">
             <DollarSign className="w-6 h-6" />
           </div>
         </div>
 
         {/* Total Orders */}
-        <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between">
+        <div className="flex items-center justify-between rounded-[22px] border border-[#e8ded2] bg-[#fffdf9] p-5">
           <div>
-            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Total Orders</p>
-            <h3 className="text-2xl font-extrabold text-gray-900 mt-1">{stats.total_orders || 0}</h3>
-            <span className="inline-block mt-2 text-[11px] font-medium text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">
-              Processed Orders
-            </span>
+            <p className="text-xs font-medium text-[#81756d]">Orders</p>
+            <h3 className="mt-1 text-2xl font-black text-[#211712]">{stats.total_orders || 0}</h3>
+            <span className="mt-1 inline-block text-[11px] font-medium text-[#81756d]">All orders</span>
           </div>
-          <div className="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#f6eddb] text-[#9b7227]">
             <ShoppingBag className="w-6 h-6" />
           </div>
         </div>
 
         {/* Total Customers */}
-        <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between">
+        <div className="flex items-center justify-between rounded-[22px] border border-[#e8ded2] bg-[#fffdf9] p-5">
           <div>
-            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Total Users</p>
-            <h3 className="text-2xl font-extrabold text-gray-900 mt-1">{stats.total_users || 0}</h3>
-            <span className="inline-block mt-2 text-[11px] font-medium text-purple-600 bg-purple-50 px-2 py-0.5 rounded-full">
-              Registered Accounts
-            </span>
+            <p className="text-xs font-medium text-[#81756d]">Customers</p>
+            <h3 className="mt-1 text-2xl font-black text-[#211712]">{stats.total_users || 0}</h3>
+            <span className="mt-1 inline-block text-[11px] font-medium text-[#81756d]">Registered accounts</span>
           </div>
-          <div className="w-12 h-12 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center">
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#f6eddb] text-[#9b7227]">
             <Users className="w-6 h-6" />
           </div>
         </div>
 
         {/* Low Stock Alert */}
-        <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between">
+        <div className="flex items-center justify-between rounded-[22px] border border-[#e8ded2] bg-[#fffdf9] p-5">
           <div>
-            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Low Stock Items</p>
-            <h3 className="text-2xl font-extrabold text-gray-900 mt-1">{stats.low_stock_count || 0}</h3>
-            <span className="inline-block mt-2 text-[11px] font-medium text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full">
-              Items Stock &le; 5
-            </span>
+            <p className="text-xs font-medium text-[#81756d]">Low stock</p>
+            <h3 className="mt-1 text-2xl font-black text-[#211712]">{stats.low_stock_count || 0}</h3>
+            <span className="mt-1 inline-block text-[11px] font-medium text-[#81756d]">5 or fewer in stock</span>
           </div>
-          <div className="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#f6eddb] text-[#9b7227]">
             <AlertTriangle className="w-6 h-6" />
           </div>
         </div>
 
       </div>
 
-      {/* Two Column Section: Low Stock Warning & Recent Orders */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        
-        {/* Low Stock Warning Box */}
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-base font-bold text-gray-900 flex items-center gap-2">
-              <AlertTriangle className="w-5 h-5 text-amber-500" />
-              <span>Low Stock Alerts</span>
-            </h2>
-            <span className="text-xs font-semibold bg-amber-100 text-amber-800 px-2.5 py-1 rounded-full">
-              {lowStockItems.length} Products
-            </span>
-          </div>
-
-          {lowStockItems.length === 0 ? (
-            <p className="text-xs text-gray-500 py-4 text-center">All product inventory levels are healthy!</p>
-          ) : (
-            <div className="divide-y divide-gray-100 max-h-60 overflow-y-auto pr-1">
-              {lowStockItems.map((item) => (
-                <div key={item.id} className="py-3 flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-3">
-                    <img src={item.image_url} alt={item.name} className="w-10 h-10 object-cover rounded-lg border border-gray-100" />
-                    <div>
-                      <p className="text-xs font-semibold text-gray-900 line-clamp-1">{item.name}</p>
-                      <p className="text-[11px] text-gray-400">{formatNPR(item.price)}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <span className="text-xs font-bold text-red-600 bg-red-50 px-2.5 py-1 rounded-md">
-                      {item.stock_quantity} left
-                    </span>
-                    <button
-                      onClick={() => handleRestock(item.id)}
-                      className="p-1.5 text-gray-500 hover:text-brand hover:bg-emerald-50 rounded-lg transition-colors"
-                      title="Quick Restock"
-                    >
-                      <RefreshCw className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-              ))}
+      {/* Monthly sales and recent orders */}
+      <div className="grid grid-cols-1 gap-5 xl:grid-cols-[1.35fr_1fr]">
+        <section className="rounded-[22px] border border-[#e8ded2] bg-[#fffdf9] p-5 sm:p-6">
+          <div className="mb-3 flex items-start justify-between gap-3">
+            <div>
+              <h2 className="text-sm font-bold text-[#211712]">Monthly sales</h2>
+              <p className="mt-1 text-xs text-[#81756d]">Completed revenue · last six months</p>
             </div>
-          )}
-        </div>
+            <span className="rounded-full bg-[#f6eddb] px-3 py-1 text-[10px] font-bold text-[#8e6828]">NPR</span>
+          </div>
+          <div className="relative mt-4 h-48 sm:h-56" role="img" aria-label="Monthly completed revenue for the last six months">
+            <svg viewBox="0 0 600 170" preserveAspectRatio="none" className="h-[calc(100%-28px)] w-full overflow-visible">
+              <defs><linearGradient id="dashboard-sales-fill" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stopColor="#d89e3e" stopOpacity=".27"/><stop offset="100%" stopColor="#d89e3e" stopOpacity="0"/></linearGradient></defs>
+              {[30, 70, 110, 150].map(y => <line key={y} x1="20" x2="580" y1={y} y2={y} stroke="#eee6dc" strokeDasharray="3 5"/>)}
+              {areaPath && <path d={areaPath} fill="url(#dashboard-sales-fill)"/>}
+              {linePoints && <polyline points={linePoints} fill="none" stroke="#b57b25" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/>}
+              {chartPoints.map(point => <circle key={point.month.month} cx={point.x} cy={point.y} r="4" fill="#fffdf9" stroke="#b57b25" strokeWidth="2.5"><title>{point.month.label}: {formatNPR(point.month.revenue)}</title></circle>)}
+            </svg>
+            <div className="absolute inset-x-0 bottom-0 flex justify-between gap-1 px-2">
+              {monthlyTrend.map(month => <span key={month.month} className="truncate text-center text-[9px] text-[#81756d] sm:text-[10px]">{month.label?.split(' ')[0]}</span>)}
+            </div>
+            {monthlyTrend.length > 0 && monthlyTrend.every(month => !(Number(month.revenue) > 0)) && <span className="absolute inset-x-0 top-1/2 -translate-y-1/2 text-center text-xs text-[#a1968c]">No completed sales in this period yet.</span>}
+          </div>
+        </section>
 
         {/* Recent Orders Box */}
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+        <section className="rounded-[22px] border border-[#e8ded2] bg-[#fffdf9] p-5 sm:p-6">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-base font-bold text-gray-900 flex items-center gap-2">
-              <ShoppingBag className="w-5 h-5 text-brand" />
+            <h2 className="text-base font-bold text-[#211712] flex items-center gap-2">
+              <ShoppingBag className="w-5 h-5 text-[#b57b25]" />
               <span>Recent Customer Orders</span>
             </h2>
-            <span className="text-xs font-semibold bg-emerald-100 text-brand px-2.5 py-1 rounded-full">
+            <span className="text-[10px] font-semibold bg-[#f6eddb] text-[#8e6828] px-2.5 py-1 rounded-full">
               Latest Activity
             </span>
           </div>
 
           {recentOrders.length === 0 ? (
-            <p className="text-xs text-gray-500 py-4 text-center">No orders placed yet.</p>
+            <p className="text-xs text-[#81756d] py-4 text-center">No orders placed yet.</p>
           ) : (
-            <div className="divide-y divide-gray-100 max-h-60 overflow-y-auto pr-1">
+            <div className="divide-y divide-[#eee6dc] max-h-60 overflow-y-auto pr-1">
               {recentOrders.map((ord) => (
                 <div key={ord.id} className="py-3 flex items-center justify-between text-xs">
                   <div>
-                    <p className="font-semibold text-gray-900">Order #{ord.id} - {ord.customer_name || 'Customer'}</p>
-                    <p className="text-[11px] text-gray-400">{new Date(ord.created_at).toLocaleDateString()}</p>
+                    <p className="font-semibold text-[#30251f]">Order #{ord.id} - {ord.customer_name || 'Customer'}</p>
+                    <p className="text-[11px] text-[#a1968c]">{new Date(ord.created_at).toLocaleDateString()}</p>
                   </div>
                   <div className="text-right">
-                    <p className="font-bold text-gray-900">{formatNPR(ord.total_amount)}</p>
-                    <span className="capitalize text-[10px] font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded">
+                    <p className="font-bold text-[#30251f]">{formatNPR(ord.total_amount)}</p>
+                    <span className="capitalize text-[10px] font-semibold text-[#417b4d] bg-[#e9f2e6] px-2 py-0.5 rounded-full">
                       {ord.order_status || 'pending'}
                     </span>
                   </div>
@@ -445,21 +430,21 @@ export default function AdminDashboard() {
               ))}
             </div>
           )}
-        </div>
+        </section>
 
       </div>
 
       {/* Main Inventory Management Table */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+      <div className="overflow-hidden rounded-[22px] border border-[#e8ded2] bg-[#fffdf9]">
         
         {/* Table Controls Header */}
-        <div className="p-6 border-b border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex flex-col justify-between gap-4 border-b border-[#eee6dc] p-5 sm:flex-row sm:items-center sm:p-6">
           <div>
-            <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-              <Package className="w-5 h-5 text-brand" />
+            <h2 className="text-lg font-bold text-[#211712] flex items-center gap-2">
+              <Package className="w-5 h-5 text-[#b57b25]" />
               <span>Product Inventory Catalog</span>
             </h2>
-            <p className="text-xs text-gray-500">Manage pricing, stock count, and delete obsolete entries.</p>
+            <p className="text-xs text-[#81756d]">Manage pricing, stock count, and product details.</p>
           </div>
 
           <div className="flex items-center gap-3">
@@ -471,7 +456,7 @@ export default function AdminDashboard() {
                 placeholder="Filter by product name..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-9 pr-3 py-1.5 text-xs bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand/30"
+                className="w-full rounded-lg border border-[#e8ded2] bg-[#fbf8f2] py-2 pl-9 pr-3 text-xs focus:outline-none focus:ring-2 focus:ring-[#ae292d]/20"
               />
             </div>
 
@@ -479,7 +464,7 @@ export default function AdminDashboard() {
             <select
               value={selectedCategory}
               onChange={(e) => setSelectedCategory(e.target.value)}
-              className="px-3 py-1.5 text-xs bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand/30"
+              className="rounded-lg border border-[#e8ded2] bg-[#fbf8f2] px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[#ae292d]/20"
             >
               <option value="all">All Categories</option>
               {categories.map((c) => (
@@ -493,7 +478,7 @@ export default function AdminDashboard() {
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="bg-gray-50/50 border-b border-gray-100 text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
+              <tr className="border-b border-[#eee6dc] bg-[#f8f4ed] text-[11px] font-semibold uppercase tracking-wider text-[#81756d]">
                 <th className="py-3.5 px-6">Product</th>
                 <th className="py-3.5 px-6">Category</th>
                 <th className="py-3.5 px-6">Price</th>
@@ -501,29 +486,29 @@ export default function AdminDashboard() {
                 <th className="py-3.5 px-6 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100 text-xs">
+            <tbody className="divide-y divide-[#eee6dc] text-xs">
               {filteredProducts.length === 0 ? (
                 <tr>
-                  <td colSpan="5" className="py-8 text-center text-gray-400">
+                    <td colSpan="5" className="py-8 text-center text-[#a1968c]">
                     No products found matching criteria.
                   </td>
                 </tr>
               ) : (
                 filteredProducts.map((p) => (
-                  <tr key={p.id} className="hover:bg-gray-50/50 transition-colors">
+                  <tr key={p.id} className="transition-colors hover:bg-[#fbf8f2]">
                     <td className="py-3.5 px-6">
                       <div className="flex items-center gap-3">
-                        <img src={p.image_url} alt={p.name} className="w-10 h-10 object-cover rounded-lg border border-gray-100 shrink-0" />
+                        <img src={p.image_url} alt={p.name} className="h-10 w-10 shrink-0 rounded-lg border border-[#eee6dc] bg-[#f8f4ed] object-contain p-1" />
                         <div>
-                          <p className="font-semibold text-gray-900">{p.name}</p>
-                          <p className="text-[10px] text-gray-400">ID: #{p.id}</p>
+                          <p className="font-semibold text-[#30251f]">{p.name}</p>
+                          <p className="text-[10px] text-[#a1968c]">ID: #{p.id}</p>
                         </div>
                       </div>
                     </td>
-                    <td className="py-3.5 px-6 text-gray-600 font-medium">
+                    <td className="py-3.5 px-6 font-medium text-[#665c55]">
                       {p.category_name || 'Uncategorized'}
                     </td>
-                    <td className="py-3.5 px-6 font-bold text-gray-900">
+                    <td className="py-3.5 px-6 font-bold text-[#30251f]">
                       {formatNPR(p.price)}
                     </td>
                     <td className="py-3.5 px-6">
@@ -544,7 +529,7 @@ export default function AdminDashboard() {
                       <div className="flex items-center justify-end gap-2">
                         <button
                           onClick={() => openEditProductModal(p)}
-                          className="p-1.5 text-gray-500 hover:text-brand hover:bg-emerald-50 rounded-lg transition-colors"
+                          className="rounded-lg p-1.5 text-[#81756d] transition-colors hover:bg-[#f6eddb] hover:text-[#9b7227]"
                           title="Edit Product"
                           aria-label={`Edit ${p.name}`}
                         >
@@ -552,13 +537,13 @@ export default function AdminDashboard() {
                         </button>
                         <button
                           onClick={() => handleRestock(p.id)}
-                          className="px-2.5 py-1 bg-emerald-50 text-brand border border-emerald-200 hover:bg-brand hover:text-white rounded-lg transition-colors font-medium text-[11px]"
+                          className="rounded-lg border border-[#e8ded2] bg-[#f6eddb] px-2.5 py-1 text-[11px] font-medium text-[#785c2c] transition-colors hover:bg-[#e6b65a] hover:text-[#211712]"
                         >
                           Restock
                         </button>
                         <button
                           onClick={() => handleDeleteProduct(p.id, p.name)}
-                          className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                          className="rounded-lg p-1.5 text-[#a1968c] transition-colors hover:bg-rose-50 hover:text-red-600"
                           title="Delete Product"
                         >
                           <Trash2 className="w-4 h-4" />
@@ -575,13 +560,13 @@ export default function AdminDashboard() {
 
       {/* Add/Edit Product Modal */}
       {isAddModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white rounded-2xl shadow-xl border border-gray-100 max-w-lg w-full overflow-hidden">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#211712]/55 p-4 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="w-full max-w-lg overflow-hidden rounded-2xl border border-[#e8ded2] bg-[#fffdf9] shadow-xl">
             
             {/* Modal Header */}
-            <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
-              <h3 className="text-base font-bold text-gray-900 flex items-center gap-2">
-                <Plus className="w-5 h-5 text-brand" />
+            <div className="flex items-center justify-between border-b border-[#eee6dc] bg-[#f8f4ed] px-6 py-4">
+              <h3 className="text-base font-bold text-[#211712] flex items-center gap-2">
+                <Plus className="w-5 h-5 text-[#b57b25]" />
                 <span>{editingProduct ? 'Edit Product' : 'Add New Product to Store'}</span>
               </h3>
               <button
@@ -625,7 +610,7 @@ export default function AdminDashboard() {
                   placeholder="e.g. Wireless Noise-Cancelling Headphones"
                   value={newProduct.name}
                   onChange={(e) => setNewProduct({ ...newProduct, name: e.target.value })}
-                  className="w-full px-3.5 py-2 text-xs bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand"
+                  className="w-full rounded-xl border border-[#e8ded2] bg-[#fbf8f2] px-3.5 py-2 text-xs focus:border-[#ae292d]/50 focus:outline-none focus:ring-2 focus:ring-[#ae292d]/15"
                 />
               </div>
 
@@ -638,7 +623,7 @@ export default function AdminDashboard() {
                   required
                   value={newProduct.category_id}
                   onChange={(e) => setNewProduct({ ...newProduct, category_id: e.target.value })}
-                  className="w-full px-3.5 py-2 text-xs bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand"
+                  className="w-full rounded-xl border border-[#e8ded2] bg-[#fbf8f2] px-3.5 py-2 text-xs focus:border-[#ae292d]/50 focus:outline-none focus:ring-2 focus:ring-[#ae292d]/15"
                 >
                   <option value="" disabled>
                     {categories.length > 0 ? 'Select a category...' : (categoryError || 'No categories available')}
@@ -665,7 +650,7 @@ export default function AdminDashboard() {
                     placeholder="1200.00"
                     value={newProduct.price}
                     onChange={(e) => setNewProduct({ ...newProduct, price: e.target.value })}
-                    className="w-full px-3.5 py-2 text-xs bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand"
+                    className="w-full rounded-xl border border-[#e8ded2] bg-[#fbf8f2] px-3.5 py-2 text-xs focus:border-[#ae292d]/50 focus:outline-none focus:ring-2 focus:ring-[#ae292d]/15"
                   />
                 </div>
                 <div>
@@ -679,7 +664,7 @@ export default function AdminDashboard() {
                     placeholder="25"
                     value={newProduct.stock}
                     onChange={(e) => setNewProduct({ ...newProduct, stock: e.target.value })}
-                    className="w-full px-3.5 py-2 text-xs bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand"
+                    className="w-full rounded-xl border border-[#e8ded2] bg-[#fbf8f2] px-3.5 py-2 text-xs focus:border-[#ae292d]/50 focus:outline-none focus:ring-2 focus:ring-[#ae292d]/15"
                   />
                 </div>
               </div>
@@ -694,7 +679,7 @@ export default function AdminDashboard() {
                   placeholder="https://images.unsplash.com/..."
                   value={newProduct.image_url}
                   onChange={(e) => setNewProduct({ ...newProduct, image_url: e.target.value })}
-                  className="w-full px-3.5 py-2 text-xs bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand"
+                  className="w-full rounded-xl border border-[#e8ded2] bg-[#fbf8f2] px-3.5 py-2 text-xs focus:border-[#ae292d]/50 focus:outline-none focus:ring-2 focus:ring-[#ae292d]/15"
                 />
               </div>
 
@@ -706,14 +691,14 @@ export default function AdminDashboard() {
                     setIsAddModalOpen(false);
                     setEditingProduct(null);
                   }}
-                  className="px-4 py-2 text-xs font-semibold text-gray-600 hover:bg-gray-100 rounded-xl transition-colors"
+                  className="rounded-xl px-4 py-2 text-xs font-semibold text-[#665c55] transition-colors hover:bg-[#f2ece4]"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="px-5 py-2 text-xs font-semibold bg-brand text-white rounded-xl hover:bg-brandDark transition-all shadow-md shadow-brand/20 disabled:opacity-50"
+                  className="rounded-xl bg-[#ae292d] px-5 py-2 text-xs font-semibold text-white shadow-md transition-all hover:bg-[#912126] disabled:opacity-50"
                 >
                   {isSubmitting ? 'Saving Product...' : (editingProduct ? 'Save Changes' : 'Add Product')}
                 </button>

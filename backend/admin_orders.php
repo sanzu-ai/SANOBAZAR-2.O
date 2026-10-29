@@ -6,13 +6,13 @@ require_once 'db.php';
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     try {
         $stmt = $pdo->query("SELECT o.id, o.user_id, u.full_name AS customer_name, u.email,
-                o.total_amount, o.shipping_address, o.phone_number, o.payment_method,
+                o.total_amount, o.subtotal_amount, o.discount_amount, o.promo_code, o.shipping_address, o.phone_number, o.payment_method,
                 o.payment_status, o.order_status, o.created_at,
                 COUNT(oi.id) AS line_count, COALESCE(SUM(oi.quantity), 0) AS item_count
             FROM orders o
             JOIN users u ON u.id = o.user_id
             LEFT JOIN order_items oi ON oi.order_id = o.id
-            GROUP BY o.id, o.user_id, u.full_name, u.email, o.total_amount, o.shipping_address,
+            GROUP BY o.id, o.user_id, u.full_name, u.email, o.total_amount, o.subtotal_amount, o.discount_amount, o.promo_code, o.shipping_address,
                 o.phone_number, o.payment_method, o.payment_status, o.order_status, o.created_at
             ORDER BY o.created_at DESC");
         echo json_encode(['status' => 'success', 'data' => $stmt->fetchAll()]);

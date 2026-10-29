@@ -3,11 +3,20 @@
 @tailwind utilities;
 
 body {
-  background-color: #f9fafb;
-  color: #111827;
+  background-color: #fbf8f2;
+  color: #241a17;
   font-family: 'Montserrat', ui-sans-serif, system-ui, sans-serif;
 }
 
 html {
   scroll-behavior: smooth;
+}
+
+.admin-sidebar-nav {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.admin-sidebar-nav::-webkit-scrollbar {
+  display: none;
 }

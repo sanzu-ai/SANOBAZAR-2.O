@@ -64,42 +64,41 @@ export default function AdminLayout() {
   ];
 
   return (
-    <div className="min-h-screen flex bg-[#f9fafb]">
+    <div className="min-h-screen flex bg-[#f4efe6]">
       {/* Mobile Menu Button */}
       <button
         type="button"
         onClick={() => setSidebarOpen(!sidebarOpen)}
         aria-label={sidebarOpen ? 'Close admin menu' : 'Open admin menu'}
         aria-expanded={sidebarOpen}
-        className="fixed top-4 left-4 z-50 lg:hidden bg-white p-2 rounded-lg border border-gray-200 shadow-sm"
+        className="fixed top-4 left-4 z-50 rounded-lg border border-[#e8ded2] bg-[#fffdf9] p-2 shadow-sm lg:hidden"
       >
         {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
       </button>
 
       {/* Sidebar */}
       <aside
-        className={`fixed lg:sticky top-0 left-0 z-40 w-64 h-screen bg-[#0f172a] text-white p-6 flex flex-col transform transition-transform ${
+        className={`fixed lg:sticky top-0 left-0 z-40 flex h-screen w-64 transform flex-col bg-[#211712] p-5 text-white transition-transform sm:p-6 ${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         }`}
       >
         {/* Admin Brand */}
-        <div className="pb-6 border-b border-slate-700/50">
-          <div className="flex items-center gap-2 mb-1">
-            <img src="/sanobazar-icon.svg" alt="" className="h-8 w-8 rounded-lg" />
-            <h1 className="text-xl font-black tracking-tight text-white">SANOBAZAR</h1>
-          </div>
-          <span className="text-[10px] font-bold uppercase tracking-widest text-emerald-400">Admin Portal</span>
+        <div className="border-b border-white/10 pb-6">
+          <Link to="/" aria-label="Sano Bazar home" className="inline-flex rounded-md bg-white px-2 py-1.5">
+            <img src="/sanobazar-logo.svg" alt="Sano Bazar" className="h-12 w-auto" />
+          </Link>
+          <span className="mt-3 block text-[10px] font-bold uppercase tracking-widest text-[#e6b65a]">Admin Portal</span>
         </div>
 
         {/* User Info */}
-        <div className="py-5 border-b border-slate-700/50">
-          <p className="text-[10px] text-slate-400 uppercase tracking-wider font-bold mb-1">Logged in as</p>
+        <div className="border-b border-white/10 py-5">
+          <p className="text-[10px] font-bold uppercase tracking-wider text-[#b7a99b] mb-1">Logged in as</p>
           <p className="text-xs font-bold text-white">{currentUser.full_name}</p>
-          <p className="text-[10px] text-slate-400 truncate">{currentUser.email}</p>
+          <p className="truncate text-[10px] text-[#b7a99b]">{currentUser.email}</p>
         </div>
 
         {/* Navigation Menu */}
-        <nav aria-label="Admin navigation" className="flex-1 pt-6 space-y-1 overflow-y-auto">
+        <nav aria-label="Admin navigation" className="admin-sidebar-nav flex-1 space-y-1 overflow-y-auto pt-6">
           {navItems.map(item => {
             const isActive = location.pathname === item.path;
             const Icon = item.icon;
@@ -110,10 +109,10 @@ export default function AdminLayout() {
                 to={item.path}
                 onClick={() => setSidebarOpen(false)}
                 aria-current={isActive ? 'page' : undefined}
-                className={`flex items-center gap-3 px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${
+                className={`flex items-center gap-3 rounded-xl px-4 py-2.5 text-xs font-semibold transition-all ${
                   isActive
-                    ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
-                    : 'text-slate-400 hover:bg-slate-800/50 hover:text-white'
+                    ? 'border border-[#e6b65a]/15 bg-[#35281f] text-[#e6b65a]'
+                    : 'text-[#c4b8ad] hover:bg-white/5 hover:text-white'
                 }`}
               >
                 <Icon className="w-4 h-4" />
@@ -127,7 +126,7 @@ export default function AdminLayout() {
         <button
           type="button"
           onClick={handleLogout}
-          className="flex items-center gap-3 px-4 py-2.5 text-left rounded-xl text-xs font-bold text-red-400 hover:bg-red-500/10 transition-all mt-6 border border-red-500/20"
+          className="mt-6 flex items-center gap-3 rounded-xl border border-rose-300/15 px-4 py-2.5 text-left text-xs font-bold text-rose-300 transition-all hover:bg-rose-500/10"
         >
           <LogOut className="w-4 h-4" />
           Logout
@@ -136,7 +135,7 @@ export default function AdminLayout() {
 
       {/* Main Content */}
       <main className="flex-1 overflow-y-auto">
-        <div className="p-6 sm:p-8 lg:p-10 max-w-7xl mx-auto">
+        <div className="mx-auto max-w-7xl p-5 sm:p-8 lg:p-10">
           <Outlet />
         </div>
       </main>

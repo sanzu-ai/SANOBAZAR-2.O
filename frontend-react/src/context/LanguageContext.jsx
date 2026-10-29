@@ -15,11 +15,13 @@ const neTranslations = {
   'Secure Payments': 'सुरक्षित भुक्तानी', 'Safe checkout experience': 'सुरक्षित चेकआउट', 'Customer Support': 'ग्राहक सहायता', 'We are here to help': 'हामी सहयोगका लागि यहाँ छौँ',
   'Easy Returns': 'सजिलो फिर्ता', 'Hassle-free returns': 'झन्झटरहित फिर्ता', 'Find your next favorite': 'आफ्नो मनपर्ने सामान खोज्नुहोस्',
   'Shop by Category': 'वर्गअनुसार किनमेल गर्नुहोस्', 'View Products': 'उत्पादन हेर्नुहोस्', 'Shop Now': 'अहिले किनमेल गर्नुहोस्',
+  'View all': 'सबै हेर्नुहोस्', items: 'सामान', Handpicked: 'हातैले छानिएका', 'See all': 'सबै हेर्नुहोस्', 'Hero slides': 'मुख्य ब्यानरहरू',
+  'Browse categories': 'वर्गहरू हेर्नुहोस्', 'Quick shop': 'छिटो किनमेल', All: 'सबै',
   'Categories will appear here when the catalog is available.': 'क्याटलग उपलब्ध भएपछि यहाँ वर्गहरू देखिनेछन्।',
   'From the live catalog': 'हालको क्याटलगबाट', 'Featured Products': 'छानिएका उत्पादनहरू', 'Best Sellers': 'धेरै बिक्री भएका', 'New Arrivals': 'नयाँ उत्पादनहरू', 'Product collections': 'उत्पादनका सूचीहरू',
   'Show Best Sellers': 'बेस्ट सेलर देखाउनुहोस्', 'Show fewer products': 'थोरै उत्पादन देखाउनुहोस्',
   'View All Products': 'सबै उत्पादन हेर्नुहोस्', 'Clear category filter': 'वर्ग फिल्टर हटाउनुहोस्', 'No products are available yet.': 'अहिलेसम्म कुनै उत्पादन उपलब्ध छैन।',
-  'No reviews yet': 'अहिलेसम्म समीक्षा छैन', 'Add to Cart': 'कार्टमा राख्नुहोस्', 'Sold Out': 'स्टक सकियो', 'Only': 'मात्र', left: 'बाँकी',
+  'No reviews yet': 'अहिलेसम्म समीक्षा छैन', 'Available now': 'अहिले उपलब्ध', 'Add to Cart': 'कार्टमा राख्नुहोस्', 'Sold Out': 'स्टक सकियो', 'Only': 'मात्र', left: 'बाँकी',
   'Recently added to the catalog': 'क्याटलगमा हालै थपिएका', 'View all products →': 'सबै उत्पादन हेर्नुहोस् →',
   'Special offers': 'विशेष अफरहरू', 'Looking for a deal?': 'राम्रो अफर खोज्दै हुनुहुन्छ?',
   'Promotional prices will appear here when offers are configured. Browse the catalog for current prices and stock.': 'अफरहरू राखिएपछि छुटका मूल्य यहाँ देखिनेछन्। हालको मूल्य र स्टकका लागि क्याटलग हेर्नुहोस्।',
@@ -27,6 +29,12 @@ const neTranslations = {
   'Get the latest offers and new arrivals in your inbox.': 'नयाँ अफर र उत्पादनको जानकारी इमेलमा पाउनुहोस्।',
   'Enter your email address': 'आफ्नो इमेल ठेगाना लेख्नुहोस्', Subscribe: 'सदस्यता लिनुहोस्',
   'YOUR ONE STOP ONLINE STORE': 'तपाईंको एकै ठाउँको अनलाइन बजार', 'Shop Smarter. Live Better.': 'बुद्धिमानी किनमेल, सहज जीवन।',
+  'YOUR EVERYDAY ONLINE BAZAAR': 'तपाईंको दैनिक अनलाइन बजार', 'Everyday goods,': 'दैनिक उपयोगका सामान,', 'one easy shop.': 'एउटै सजिलो बजारमा।',
+  'Explore useful finds for your home, your style, and the moments in between.': 'घर, शैली र दैनिक जीवनका लागि उपयोगी सामान खोज्नुहोस्।',
+  'GOOD FINDS FOR EVERY HOME': 'हरेक घरका लागि उपयोगी सामान', 'Make room for': 'थप खुसीका लागि', 'a little more joy.': 'केही ठाउँ बनाउनुहोस्।',
+  'Discover practical products and thoughtful picks for daily life.': 'दैनिक जीवनका उपयोगी र सोचेर छानिएका सामान भेट्टाउनुहोस्।',
+  'A BETTER WAY TO BROWSE': 'किनमेल गर्ने अझ सजिलो तरिका', 'Find what you need,': 'चाहिएको कुरा', 'right here.': 'यहीँ खोज्नुहोस्।',
+  'Shop the latest products from Sano Bazar’s growing catalog.': 'सानो बजारको बढ्दो क्याटलगका नयाँ सामान हेर्नुहोस्।',
   'Discover quality products at great prices, all in one place.': 'गुणस्तरीय सामान उचित मूल्यमा, सबै एकै ठाउँमा।', 'Made for Nepal': 'नेपालका लागि',
   'Everyday essentials': 'दैनिक आवश्यक सामान', 'Discover useful finds for your home, work, and everyday life.': 'घर, काम र दैनिक जीवनका लागि उपयोगी सामान खोज्नुहोस्।',
   'TECH FOR EVERY DAY': 'हरेक दिनका लागि प्रविधि', 'Upgrade your routine.': 'आफ्नो दैनिकी अझ सहज बनाउनुहोस्।', 'Find your next gadget': 'आफ्नो अर्को ग्याजेट छान्नुहोस्',
@@ -58,6 +66,18 @@ const neTranslations = {
 
 const extraTranslations = {
   'Utility navigation': 'उपयोगी लिङ्कहरू', 'Main navigation': 'मुख्य नेभिगेसन', 'Mobile navigation': 'मोबाइल नेभिगेसन', Language: 'भाषा',
+  'Store information links': 'स्टोरसम्बन्धी जानकारी', 'What We Sell': 'हामी के बेच्छौँ', 'Our Locations': 'हाम्रा स्थानहरू', EMI: 'किस्ताबन्दी',
+  'Welcome to Sano Bazar': 'सानो बजारमा स्वागत छ', 'Your orders in one place': 'तपाईंका अर्डर एउटै ठाउँमा', 'Join the bazaar': 'बजारमा जोडिनुहोस्', 'Find useful things for everyday life.': 'दैनिक जीवनका उपयोगी सामान खोज्नुहोस्।', 'Keep your account in one place': 'आफ्नो खाता एउटै ठाउँमा राख्नुहोस्', 'Create your account': 'आफ्नो खाता खोल्नुहोस्', 'सानो बजार, ठूलो खुसी!': 'सानो बजार, ठूलो खुसी!',
+  'EMI Calculator': 'ईएमआई क्याल्कुलेटर', Breadcrumb: 'पृष्ठ मार्ग', 'Plan your purchase': 'आफ्नो खरिद योजना बनाउनुहोस्', 'Calculate your EMI and plan with confidence.': 'आफ्नो ईएमआई हिसाब गर्नुहोस् र ढुक्क भएर योजना बनाउनुहोस्।',
+  'Enter an amount, interest rate, and repayment period to estimate your monthly payment.': 'मासिक भुक्तानी अनुमान गर्न रकम, ब्याजदर र भुक्तानी अवधि लेख्नुहोस्।', 'Loan details': 'ऋण विवरण', 'Adjust the values to see your estimated EMI.': 'अनुमानित ईएमआई हेर्न रकमहरू मिलाउनुहोस्।', 'Loan amount': 'ऋण रकम', NPR: 'नेपाली रुपैयाँ', 'Annual interest rate': 'वार्षिक ब्याजदर', 'Loan tenure': 'ऋण अवधि', Months: 'महिना', '1 month': '१ महिना', '30 years': '३० वर्ष',
+  'Calculate EMI': 'ईएमआई हिसाब गर्नुहोस्', 'This is an estimate for planning. Your bank or lender sets the final rate, fees, and eligibility.': 'यो योजना बनाउनका लागि अनुमान मात्र हो। अन्तिम ब्याजदर, शुल्क र योग्यता बैंक वा ऋणदाताले तय गर्छ।', 'Your estimate': 'तपाईंको अनुमान', 'EMI calculation results': 'ईएमआई हिसाबको नतिजा', 'Estimated monthly EMI': 'अनुमानित मासिक ईएमआई', 'Update the loan details and calculate to view your estimate.': 'अनुमान हेर्न ऋण विवरण मिलाएर हिसाब गर्नुहोस्।',
+  'Total amount': 'कुल रकम', 'Total interest': 'कुल ब्याज', 'Principal amount': 'मूल ऋण रकम', 'Payment breakdown': 'भुक्तानी विवरण', 'Over the full tenure': 'पूरा अवधिको', Principal: 'मूलधन', Interest: 'ब्याज', 'EMI information': 'ईएमआई जानकारी', 'Clear estimate': 'स्पष्ट अनुमान', 'See how amount, rate, and term affect a monthly payment.': 'रकम, ब्याजदर र अवधिले मासिक भुक्तानीमा पार्ने असर हेर्नुहोस्।', 'Confirm with your lender': 'ऋणदातासँग पुष्टि गर्नुहोस्', 'Rates and fees can vary by bank, product, and eligibility.': 'ब्याजदर र शुल्क बैंक, उत्पादन र योग्यताअनुसार फरक हुन सक्छन्।', 'Plan before you shop': 'किनमेलअघि योजना बनाउनुहोस्', 'Use this estimate as a starting point for your budget.': 'यो अनुमानलाई आफ्नो बजेट योजनाको सुरुवातका रूपमा प्रयोग गर्नुहोस्।', 'Need help choosing a payment option?': 'भुक्तानी विकल्प छान्न सहयोग चाहिन्छ?', 'Contact our team for current payment information.': 'हालका भुक्तानी जानकारीका लागि हाम्रो टोलीलाई सम्पर्क गर्नुहोस्।',
+  'Blogs': 'ब्लग', Brands: 'ब्रान्डहरू', 'On Sale': 'छुटमा', 'Electronics': 'इलेक्ट्रोनिक्स', 'Home & Living': 'घरायसी सामान', Fashion: 'फेसन', Accessories: 'सामान',
+  'Phones & tablets': 'फोन तथा ट्याब्लेट', Audio: 'अडियो', Computers: 'कम्प्युटर', Furniture: 'फर्निचर', Kitchen: 'भान्सा', 'Home decor': 'घर सजावट', Clothing: 'लुगा', Shoes: 'जुत्ता', Bags: 'झोला', Watches: 'घडी', 'Everyday accessories': 'दैनिक प्रयोगका सामान',
+  'Everyday essentials': 'दैनिक आवश्यक सामान', 'Smart finds for daily life.': 'दैनिक जीवनका लागि उपयोगी सामान।', 'Useful picks for your home, work, and everything in between.': 'घर, काम र दैनिक जीवनका लागि उपयोगी छनोट।',
+  'Everyday finds': 'दैनिक उपयोगका सामान', 'Easy ordering': 'सजिलो अर्डर', 'Free delivery over NPR 2,000': 'रु. २,००० माथि निःशुल्क डेलिभरी', 'Here to help': 'सहयोगका लागि तयार',
+  'New arrivals': 'नयाँ सामान', 'A little something for every day.': 'हरेक दिनका लागि केही विशेष।', 'Explore fresh finds from the Sano Bazar catalog.': 'सानो बजार क्याटलगका नयाँ सामान हेर्नुहोस्।',
+  'Find your next favourite': 'आफ्नो अर्को मनपर्ने सामान खोज्नुहोस्', 'Good things are closer than you think.': 'राम्रो सामान तपाईंको नजिकै छ।', 'Create an account to keep your orders and saved products together.': 'अर्डर र सुरक्षित गरेका सामान एउटै ठाउँमा राख्न खाता खोल्नुहोस्।', 'Register your interest.': 'खाता खोल्नुहोस्।', 'Featured promotions': 'विशेष अफरहरू',
   Cart: 'कार्ट', Wishlist: 'इच्छा सूची', 'All rights reserved.': 'सर्वाधिकार सुरक्षित।',
   'Order updates': 'अर्डर अपडेट', Welcome: 'स्वागत छ', 'Order updates and delivery status for your recent purchases.': 'हालका खरिदको अर्डर र डेलिभरी स्थिति यहाँ हेर्नुहोस्।',
   'Account details and order history from your signed-in Sano Bazar session.': 'तपाईंको सानो बजार खाताको विवरण र अर्डर इतिहास।',
@@ -93,6 +113,12 @@ const extraTranslations = {
   products: 'उत्पादनहरू',
   'Thanks for your interest. Newsletter sign-up is not connected yet.': 'रुचिका लागि धन्यवाद। न्यूजलेटर सदस्यता सुविधा अझै जडान गरिएको छैन।',
   Checkout: 'चेकआउट', 'Customer Name': 'ग्राहकको नाम', 'Phone Number': 'फोन नम्बर', 'Shipping Address': 'डेलिभरी ठेगाना',
+  'Have a promo code?': 'प्रोमो कोड छ?', 'Promo code': 'प्रोमो कोड', 'Enter promo code': 'प्रोमो कोड लेख्नुहोस्', Apply: 'लागू गर्नुहोस्',
+  'Promo discount': 'प्रोमो छुट', 'Promo code applied': 'प्रोमो कोड लागू भयो', 'Checking…': 'जाँच हुँदैछ…',
+  'Enter a valid promo code.': 'मान्य प्रोमो कोड लेख्नुहोस्।', 'This promo code is invalid or inactive.': 'यो प्रोमो कोड अमान्य छ वा निष्क्रिय छ।',
+  'This promo code is not active yet.': 'यो प्रोमो कोड अझै सक्रिय भएको छैन।', 'This promo code has expired.': 'यो प्रोमो कोडको समय सकिएको छ।',
+  'This promo code has reached its usage limit.': 'यो प्रोमो कोड प्रयोगको सीमा पुगेको छ।',
+  'Your order does not meet the minimum amount for this promo code.': 'तपाईंको अर्डर यो प्रोमो कोडको न्यूनतम रकम पुगेको छैन।',
   'Street address, City, Ward No. (e.g. New Baneshwor, Kathmandu)': 'ठेगाना, सहर, वडा नं. (जस्तै: नयाँ बानेश्वर, काठमाडौं)',
   'Cash on Delivery': 'सामान पाएपछि भुक्तानी', 'Pay when order arrives': 'अर्डर आइपुगेपछि भुक्तानी गर्नुहोस्', 'Digital Wallet': 'डिजिटल वालेट',
   'eSewa / Khalti Simulated': 'eSewa / Khalti (डेमो)', Qty: 'परिमाण', Subtotal: 'उप-जम्मा', 'Delivery Charge': 'डेलिभरी शुल्क', FREE: 'निःशुल्क', Total: 'जम्मा',
@@ -115,6 +141,9 @@ const extraTranslations = {
   'Our values': 'हाम्रा मूल्यहरू', 'Useful information, respectful customer service, and a focus on making the buying journey easier.': 'उपयोगी जानकारी, सम्मानजनक ग्राहक सेवा र किनमेललाई सहज बनाउने प्रतिबद्धता।',
   'Why shop with us?': 'हामीबाट किनमेल किन गर्ने?', 'Browse a changing catalog, check current stock, and place orders through the available checkout flow. Product-specific details are shown on each listing.': 'अद्यावधिक क्याटलग हेर्नुहोस्, उपलब्ध स्टक जाँच्नुहोस् र चेकआउटबाट अर्डर गर्नुहोस्। प्रत्येक उत्पादनका विवरण त्यसको पृष्ठमा छन्।',
   'Shop now': 'अहिले किनमेल गर्नुहोस्', 'We’re here to help': 'हामी सहयोगका लागि यहाँ छौँ', 'Contact Sano Bazar': 'सानो बजारमा सम्पर्क गर्नुहोस्',
+  'Get in touch with us': 'हामीसँग सम्पर्क गर्नुहोस्', 'Sano Bazar': 'सानो बजार', 'Here for your everyday shopping': 'तपाईंको दैनिक किनमेलका लागि हामी यहाँ छौँ',
+  'Visit us': 'हामीलाई भेट्नुहोस्', 'Reach our team through any of these channels.': 'यीमध्ये कुनै माध्यमबाट हाम्रो टोलीसँग सम्पर्क गर्नुहोस्।',
+  'Follow us': 'हामीलाई फलो गर्नुहोस्', 'Send us a message': 'हामीलाई सन्देश पठाउनुहोस्', 'Fill out the form and our team will get back to you.': 'फारम भर्नुहोस्, हाम्रो टोलीले तपाईंलाई जवाफ दिनेछ।',
   'Send a message here and our team will review it.': 'यहाँ सन्देश पठाउनुहोस्, हाम्रो टोलीले हेरेर जवाफ दिनेछ।',
   'Full name': 'पूरा नाम', 'Phone number (optional)': 'फोन नम्बर (ऐच्छिक)', Subject: 'विषय', Message: 'सन्देश', 'Send message': 'सन्देश पठाउनुहोस्', 'Sending…': 'पठाउँदैछ…', 'Message sent.': 'तपाईंको सन्देश सानो बजारमा पठाइयो।',
   'Check the contact form fields and try again.': 'सम्पर्क फारमका विवरण जाँचेर फेरि प्रयास गर्नुहोस्।',
@@ -144,13 +173,7 @@ const extraTranslations = {
 const translations = { ...neTranslations, ...extraTranslations };
 
 export function LanguageProvider({ children }) {
-  const [language, setLanguageState] = useState(() => {
-    try {
-      return localStorage.getItem('sanobazar_language') === 'ne' ? 'ne' : 'en';
-    } catch {
-      return 'en';
-    }
-  });
+  const [language, setLanguageState] = useState('en');
 
   const setLanguage = useCallback(nextLanguage => {
     setLanguageState(nextLanguage === 'ne' ? 'ne' : 'en');

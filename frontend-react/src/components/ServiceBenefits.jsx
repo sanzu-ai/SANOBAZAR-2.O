@@ -11,12 +11,14 @@ const benefits = [
 export default function ServiceBenefits() {
   const { t } = useLanguage();
   return (
-    <section aria-label={t('Shopping benefits')} className="border-b border-slate-100 bg-white">
-      <div className="mx-auto grid max-w-7xl grid-cols-2 divide-x divide-slate-100 px-4 py-5 sm:px-6 md:grid-cols-4 lg:px-8">
-        {benefits.map(({ title, detail, Icon }) => (
-          <div key={title} className="flex items-center gap-3 px-3 py-2 sm:px-6">
-            <Icon className="h-7 w-7 shrink-0 text-[#17263d]" strokeWidth={1.7} />
-            <div><h3 className="text-xs font-extrabold text-slate-900 sm:text-sm">{t(title)}</h3><p className="mt-0.5 text-[10px] text-slate-500 sm:text-xs">{t(detail)}</p></div>
+    <section aria-label={t('Shopping benefits')} className="rounded-[28px] border border-[#e9dfd5] bg-white px-4 py-8 sm:px-7 sm:py-10">
+      <div className="mb-7 text-center"><p className="text-[10px] font-extrabold uppercase tracking-[.2em] text-[#901a1c]">{t('Here for your everyday')}</p><h2 className="mt-2 text-2xl font-black tracking-tight text-[#302622] sm:text-3xl">{t('Why shop with Sano Bazar?')}</h2></div>
+      <div className="mx-auto grid max-w-6xl grid-cols-2 gap-x-2 gap-y-6 md:grid-cols-4">
+        {benefits.map(({ title, detail, Icon }, index) => (
+          <div key={title} className={`flex flex-col items-center px-2 text-center md:px-4 ${index > 0 ? 'md:border-l md:border-[#eee5dc]' : ''}`}>
+            <span className="flex h-12 w-12 items-center justify-center rounded-full bg-[#f9eeee] text-[#901a1c]"><Icon className="h-5 w-5" strokeWidth={1.8} /></span>
+            <h3 className="mt-3 text-xs font-extrabold text-[#302622] sm:text-sm">{t(title)}</h3>
+            <p className="mt-1 max-w-[190px] text-[10px] leading-5 text-[#716963] sm:text-xs">{t(detail)}</p>
           </div>
         ))}
       </div>
