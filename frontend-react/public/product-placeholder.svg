@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 480" fill="none">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="640" y2="480" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#EAF2FF"/>
+      <stop offset="1" stop-color="#F6F9FE"/>
+    </linearGradient>
+  </defs>
+  <path fill="url(#bg)" d="M0 0h640v480H0z"/>
+  <circle cx="320" cy="223" r="106" fill="#DCEAFF"/>
+  <path d="m260 194 60-47 60 47v74H260v-74Z" fill="#fff" stroke="#1766D1" stroke-width="10" stroke-linejoin="round"/>
+  <path d="m260 194 60 45 60-45M320 239v29" stroke="#1766D1" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="320" y="368" fill="#475569" font-family="Montserrat,Arial,sans-serif" font-size="22" font-weight="600" text-anchor="middle">Product image coming soon</text>
+</svg>

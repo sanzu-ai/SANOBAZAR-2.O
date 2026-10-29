@@ -1,17 +1,25 @@
 import { useEffect, useState } from 'react';
+import { ArrowRight } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { API_BASE } from '../lib/api';
 import HeroSection from '../components/HeroSection';
 import ServiceBenefits from '../components/ServiceBenefits';
 import CategorySection from '../components/CategorySection';
 import FeaturedProducts from '../components/FeaturedProducts';
-import NewsletterSection from '../components/NewsletterSection';
-import ProductCard from '../components/ProductCard';
-import { Link } from 'react-router-dom';
+import { useLanguage } from '../context/LanguageContext';
+
+const featuredArticles = [
+  { slug: 'shopping-online-safely', category: 'Shopping tips', title: 'A few simple ways to shop online with confidence', excerpt: 'Practical checks to make before placing an online order.', image: 'https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?auto=format&fit=crop&w=850&q=80' },
+  { slug: 'choosing-everyday-essentials', category: 'Guides', title: 'How to compare everyday essentials', excerpt: 'Compare the details that matter for your next purchase.', image: 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&w=850&q=80' },
+  { slug: 'getting-more-from-your-budget', category: 'Ideas', title: 'Planning a shopping budget that works for you', excerpt: 'A straightforward approach to planning purchases.', image: 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&w=850&q=80' }
+];
 
 export default function Home({ searchQuery }) {
+  const { t } = useLanguage();
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState('all');
+  const [activeTab, setActiveTab] = useState('featured');
   const [showAllProducts, setShowAllProducts] = useState(false);
   const [loading, setLoading] = useState(true);
   const [catalogError, setCatalogError] = useState('');
@@ -49,11 +57,23 @@ export default function Home({ searchQuery }) {
 
   const selectCategory = categoryId => {
     setSelectedCategory(String(categoryId));
+    setActiveTab('featured');
     setShowAllProducts(false);
     window.setTimeout(() => document.getElementById('best-sellers')?.scrollIntoView({ behavior: 'smooth' }), 0);
   };
 
   const viewAllProducts = () => setShowAllProducts(value => !value);
+  const hasBestSellers = products.some(product => Number(product.units_sold) > 0);
+  const tabs = [
+    { id: 'featured', label: 'Featured Products' },
+    ...(hasBestSellers ? [{ id: 'best-sellers', label: 'Best Sellers' }] : []),
+    { id: 'new', label: 'New Arrivals' }
+  ];
+  const visibleProducts = activeTab === 'best-sellers'
+    ? [...products].sort((a, b) => Number(b.units_sold || 0) - Number(a.units_sold || 0))
+    : activeTab === 'new'
+      ? [...products].sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0) || Number(b.id) - Number(a.id))
+      : products;
 
   return (
     <>
@@ -62,8 +82,11 @@ export default function Home({ searchQuery }) {
       <div className="mx-auto max-w-7xl space-y-10 px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
         <CategorySection categories={categories} onSelectCategory={selectCategory} />
         <FeaturedProducts
-          products={products}
           loading={loading}
+          tabs={tabs}
+          activeTab={activeTab}
+          onTabChange={tab => { setActiveTab(tab); setShowAllProducts(false); }}
+          products={visibleProducts}
           showAll={showAllProducts}
           error={catalogError}
           selectedCategory={selectedCategory}
@@ -73,10 +96,19 @@ export default function Home({ searchQuery }) {
             setShowAllProducts(false);
           }}
         />
-        {!loading && products.length > 0 && <section className="space-y-4"><div className="flex items-end justify-between"><div><p className="text-[10px] font-bold uppercase tracking-[.16em] text-[#1766d1]">Recently added to the catalog</p><h2 className="mt-1 text-xl font-black text-[#17263d] sm:text-2xl">New Arrivals</h2></div><Link to="/shop?sort=newest" className="text-xs font-bold text-[#1766d1]">View all products →</Link></div><div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">{[...products].sort((a,b)=>new Date(b.created_at||0)-new Date(a.created_at||0)).slice(0,6).map(product=><ProductCard key={product.id} product={product}/>)}</div></section>}
-        <section className="flex flex-col justify-between gap-4 rounded-2xl bg-[#eaf2ff] p-6 sm:flex-row sm:items-center sm:p-8"><div><p className="text-xs font-bold uppercase tracking-wide text-[#1766d1]">Special offers</p><h2 className="mt-1 text-xl font-black text-[#17263d]">Looking for a deal?</h2><p className="mt-2 text-sm text-slate-600">Promotional prices will appear here when offers are configured. Browse the catalog for current prices and stock.</p></div><Link to="/shop" className="inline-flex shrink-0 items-center justify-center rounded-xl bg-[#1766d1] px-5 py-3 text-sm font-bold text-white">Explore products</Link></section>
+        <section className="space-y-4">
+          <div className="flex items-end justify-between gap-3">
+            <div><p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#1766d1]">{t('Sano Bazar Journal')}</p><h2 className="mt-1 text-xl font-black tracking-tight text-[#17263d] sm:text-2xl">{t('Helpful reads')}</h2></div>
+            <Link to="/blog" className="inline-flex items-center gap-1 text-xs font-bold text-[#1766d1] hover:text-blue-800">{t('Read the blog')} <ArrowRight className="h-3.5 w-3.5" /></Link>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {featuredArticles.map(article => <Link key={article.slug} to={`/blog/${article.slug}`} className="group overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-lg">
+              <img src={article.image} alt="" loading="lazy" className="h-40 w-full object-cover transition duration-500 group-hover:scale-[1.03]" />
+              <div className="p-5"><p className="text-[10px] font-bold uppercase tracking-wider text-[#1766d1]">{t(article.category)}</p><h3 className="mt-2 line-clamp-2 text-base font-black leading-6 text-[#17263d]">{t(article.title)}</h3><p className="mt-2 line-clamp-2 text-sm leading-6 text-slate-600">{t(article.excerpt)}</p><span className="mt-4 inline-flex items-center gap-1 text-xs font-bold text-[#1766d1]">{t('Read article')} <ArrowRight className="h-3.5 w-3.5 transition group-hover:translate-x-1" /></span></div>
+            </Link>)}
+          </div>
+        </section>
       </div>
-      <NewsletterSection />
     </>
   );
 }

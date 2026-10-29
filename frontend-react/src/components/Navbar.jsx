@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Heart, Menu, Search, ShieldCheck, ShoppingCart, UserRound, X } from 'lucide-react';
 import { useCart } from '../context/CartContext';
+import { useLanguage } from '../context/LanguageContext';
 import { API_BASE } from '../lib/api';
 import AnnouncementBar from './AnnouncementBar';
 
@@ -18,6 +19,7 @@ export default function Navbar({ searchQuery, setSearchQuery }) {
   const navigate = useNavigate();
   const location = useLocation();
   const { totalItems: cartCount, wishlistCount } = useCart();
+  const { t } = useLanguage();
   const [localSearch, setLocalSearch] = useState(searchQuery || '');
   const [mobileOpen, setMobileOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
@@ -55,17 +57,16 @@ export default function Navbar({ searchQuery, setSearchQuery }) {
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="flex h-[72px] items-center justify-between gap-3">
             <Link to="/" className="flex shrink-0 items-center gap-2.5" aria-label="Sano Bazar home">
-              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#1766d1] text-white shadow-md shadow-blue-900/15"><ShoppingCart className="h-6 w-6" /></span>
-              <span className="leading-tight"><span className="block text-[17px] font-black tracking-tight text-[#17263d] sm:text-lg">सानो <span className="text-[#1766d1]">बजार</span></span><span className="block text-[10px] font-semibold tracking-wide text-slate-500">Sano Bazar</span></span>
+              <img src="/sanobazar-logo.svg" alt="" className="h-14 w-auto max-w-[220px] object-contain sm:max-w-[235px]" />
             </Link>
 
-            <nav aria-label="Main navigation" className="hidden items-center gap-5 lg:flex">
-              {navLinks.map(item => <Link key={item.label} to={item.href} className={`relative py-2 text-[13px] font-semibold transition hover:text-[#1766d1] ${location.pathname === item.href ? 'text-[#1766d1] after:absolute after:inset-x-0 after:-bottom-1 after:mx-auto after:h-0.5 after:w-5 after:rounded-full after:bg-[#1766d1]' : 'text-slate-700'}`}>{item.label}</Link>)}
+            <nav aria-label={t('Main navigation')} className="hidden items-center gap-5 lg:flex">
+              {navLinks.map(item => <Link key={item.label} to={item.href} className={`relative py-2 text-[13px] font-semibold transition hover:text-[#1766d1] ${location.pathname === item.href ? 'text-[#1766d1] after:absolute after:inset-x-0 after:-bottom-1 after:mx-auto after:h-0.5 after:w-5 after:rounded-full after:bg-[#1766d1]' : 'text-slate-700'}`}>{t(item.label)}</Link>)}
             </nav>
 
             <form onSubmit={submitSearch} className="relative hidden max-w-[245px] flex-1 xl:block">
-              <label className="sr-only" htmlFor="site-search">Search products</label>
-              <input id="site-search" value={localSearch} onChange={event => setLocalSearch(event.target.value)} placeholder="Search for products..." className="w-full rounded-full border border-slate-200 bg-slate-50 py-2.5 pl-4 pr-10 text-xs outline-none transition focus:border-blue-300 focus:bg-white focus:ring-2 focus:ring-blue-100" />
+              <label className="sr-only" htmlFor="site-search">{t('Search products')}</label>
+              <input id="site-search" value={localSearch} onChange={event => setLocalSearch(event.target.value)} placeholder={t('Search for products...')} className="w-full rounded-full border border-slate-200 bg-slate-50 py-2.5 pl-4 pr-10 text-xs outline-none transition focus:border-blue-300 focus:bg-white focus:ring-2 focus:ring-blue-100" />
               <button aria-label="Search" className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full p-1.5 text-slate-500 hover:text-[#1766d1]"><Search className="h-4 w-4" /></button>
             </form>
 
@@ -81,15 +82,15 @@ export default function Navbar({ searchQuery, setSearchQuery }) {
 
           {mobileOpen && <div className="border-t border-slate-100 py-3 lg:hidden">
             <form onSubmit={submitSearch} className="relative mb-3">
-              <label className="sr-only" htmlFor="mobile-search">Search products</label>
-              <input id="mobile-search" value={localSearch} onChange={event => setLocalSearch(event.target.value)} placeholder="Search for products..." className="w-full rounded-lg border border-slate-200 bg-slate-50 py-2.5 pl-3 pr-10 text-sm outline-none focus:border-blue-300" />
+              <label className="sr-only" htmlFor="mobile-search">{t('Search products')}</label>
+              <input id="mobile-search" value={localSearch} onChange={event => setLocalSearch(event.target.value)} placeholder={t('Search for products...')} className="w-full rounded-lg border border-slate-200 bg-slate-50 py-2.5 pl-3 pr-10 text-sm outline-none focus:border-blue-300" />
               <button aria-label="Search" className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-slate-500"><Search className="h-4 w-4" /></button>
             </form>
             <nav aria-label="Mobile navigation" className="grid grid-cols-2 gap-1">
-              {navLinks.map(item => <Link key={item.label} to={item.href} onClick={() => setMobileOpen(false)} className="rounded-lg px-3 py-2.5 text-sm font-semibold text-slate-700 hover:bg-blue-50 hover:text-[#1766d1]">{item.label}</Link>)}
-              <Link to="/cart" onClick={() => setMobileOpen(false)} className="rounded-lg px-3 py-2.5 text-sm font-semibold text-slate-700 hover:bg-blue-50">Cart ({cartCount})</Link><Link to="/wishlist" onClick={() => setMobileOpen(false)} className="rounded-lg px-3 py-2.5 text-sm font-semibold text-slate-700 hover:bg-blue-50">Wishlist ({wishlistCount})</Link>
-              {!user && <Link to="/login" onClick={() => setMobileOpen(false)} className="rounded-lg px-3 py-2.5 text-sm font-semibold text-slate-700 hover:bg-blue-50">Sign In</Link>}
-              {user?.role === 'admin' && <Link to="/admin" onClick={() => setMobileOpen(false)} className="rounded-lg px-3 py-2.5 text-sm font-semibold text-[#1766d1] hover:bg-blue-50">Admin Dashboard</Link>}
+              {navLinks.map(item => <Link key={item.label} to={item.href} onClick={() => setMobileOpen(false)} className="rounded-lg px-3 py-2.5 text-sm font-semibold text-slate-700 hover:bg-blue-50 hover:text-[#1766d1]">{t(item.label)}</Link>)}
+              <Link to="/cart" onClick={() => setMobileOpen(false)} className="rounded-lg px-3 py-2.5 text-sm font-semibold text-slate-700 hover:bg-blue-50">{t('Cart')} ({cartCount})</Link><Link to="/wishlist" onClick={() => setMobileOpen(false)} className="rounded-lg px-3 py-2.5 text-sm font-semibold text-slate-700 hover:bg-blue-50">{t('Wishlist')} ({wishlistCount})</Link>
+              {!user && <Link to="/login" onClick={() => setMobileOpen(false)} className="rounded-lg px-3 py-2.5 text-sm font-semibold text-slate-700 hover:bg-blue-50">{t('Sign In')}</Link>}
+              {user?.role === 'admin' && <Link to="/admin" onClick={() => setMobileOpen(false)} className="rounded-lg px-3 py-2.5 text-sm font-semibold text-[#1766d1] hover:bg-blue-50">{t('Admin Dashboard')}</Link>}
             </nav>
           </div>}
         </div>

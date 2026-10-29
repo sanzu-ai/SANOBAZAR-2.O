@@ -2,10 +2,12 @@ import { X, Plus, Minus, Trash2, ShoppingBag } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useNavigate } from 'react-router-dom';
 import { formatNPR } from '../lib/currency';
+import { useLanguage } from '../context/LanguageContext';
 
 export default function CartDrawer() {
   const { cart, isCartOpen, setIsCartOpen, updateQuantity, removeFromCart, totalPrice, cartSyncError } = useCart();
   const navigate = useNavigate();
+  const { t } = useLanguage();
 
   if (!isCartOpen) return null;
 
@@ -13,7 +15,7 @@ export default function CartDrawer() {
     setIsCartOpen(false);
     const user = localStorage.getItem('sanobazar_user');
     if (!user) {
-      alert("Please log in to complete your checkout.");
+      alert(t('Please log in to complete your checkout.'));
       navigate('/login', { state: { from: '/checkout' } });
     } else {
       navigate('/checkout');
@@ -35,7 +37,7 @@ export default function CartDrawer() {
           <div className="p-4 sm:p-6 border-b border-gray-100 flex items-center justify-between">
             <div className="flex items-center gap-2 text-[#087f5b]">
               <ShoppingBag className="w-5 h-5" />
-              <h2 className="font-extrabold text-lg">Your Cart</h2>
+              <h2 className="font-extrabold text-lg">{t('Your Cart')}</h2>
             </div>
             <button 
               onClick={() => setIsCartOpen(false)}
@@ -52,14 +54,14 @@ export default function CartDrawer() {
             {cart.length === 0 ? (
               <div className="text-center py-16 text-gray-400">
                 <ShoppingBag className="w-12 h-12 mx-auto mb-3 opacity-30" />
-                <p className="font-medium text-sm">Your cart is empty.</p>
+                <p className="font-medium text-sm">{t('Your cart is empty.')}</p>
               </div>
             ) : (
               cart.map((item) => (
                 <div key={item.id} className="flex gap-3 bg-gray-50 p-3 rounded-xl border border-gray-100 items-center">
                   <img src={item.image_url} alt={item.name} className="w-16 h-16 object-cover rounded-lg bg-white" />
                   <div className="flex-1 min-w-0">
-                    <h4 className="font-bold text-xs text-gray-900 truncate">{item.name}</h4>
+                    <h4 className="font-bold text-xs text-gray-900 truncate">{t(item.name)}</h4>
                     <p className="text-xs font-extrabold text-[#087f5b] mt-0.5">{formatNPR(item.price)}</p>
                     
                     {/* Quantity controls */}
@@ -80,7 +82,7 @@ export default function CartDrawer() {
                     </div>
                   </div>
 
-                  <button 
+                  <button aria-label={t('Remove item')}
                     onClick={() => removeFromCart(item.id)}
                     className="p-1.5 text-gray-400 hover:text-red-500 transition"
                   >
@@ -95,14 +97,14 @@ export default function CartDrawer() {
           {cart.length > 0 && (
             <div className="p-4 sm:p-6 border-t border-gray-100 bg-gray-50">
               <div className="flex justify-between items-center mb-4">
-                <span className="text-sm font-semibold text-gray-600">Total Amount</span>
+                <span className="text-sm font-semibold text-gray-600">{t('Total Amount')}</span>
                 <span className="text-xl font-black text-[#087f5b]">{formatNPR(totalPrice)}</span>
               </div>
               <button
                 onClick={handleCheckout}
                 className="w-full bg-[#087f5b] hover:bg-[#066347] text-white py-3 rounded-xl font-bold text-sm shadow-md transition"
               >
-                Proceed to Checkout
+                {t('Proceed to Checkout')}
               </button>
             </div>
           )}

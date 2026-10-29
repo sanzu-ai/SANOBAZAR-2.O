@@ -1,0 +1,25 @@
+# Dependencies and generated frontend build
+node_modules/
+frontend-react/node_modules/
+frontend-react/dist/
+
+# Environment files (keep examples shareable)
+.env
+.env.*
+!.env.example
+frontend-react/.env
+frontend-react/.env.*
+!frontend-react/.env.example
+
+# Keep database configuration out of GitHub
+backend/db.php
+backend-production/db.php
+backend-production/db.production.php
+
+# Keep the duplicate production backend out of GitHub
+backend-production/
+
+# Logs and operating system files
+*.log
+.DS_Store
+Thumbs.db

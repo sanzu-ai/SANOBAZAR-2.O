@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { User, Mail, Lock, UserPlus, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { useLanguage } from '../context/LanguageContext';
 
 export default function Register() {
   const [fullName, setFullName] = useState('');
@@ -11,6 +12,7 @@ export default function Register() {
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const { t } = useLanguage();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -18,12 +20,12 @@ export default function Register() {
     setSuccess('');
 
     if (password !== confirmPassword) {
-      setError('Passwords do not match.');
+      setError(t('Passwords do not match.'));
       return;
     }
 
     if (password.length < 6) {
-      setError('Password must be at least 6 characters long.');
+      setError(t('Password must be at least 6 characters long.'));
       return;
     }
 
@@ -43,16 +45,16 @@ export default function Register() {
       const data = await response.json();
 
       if (data.status === 'success' || data.message?.toLowerCase().includes('success')) {
-        setSuccess('Account created successfully! Redirecting to login...');
+        setSuccess(t('Account created successfully! Redirecting to login...'));
         setTimeout(() => {
           navigate('/login');
         }, 1500);
       } else {
-        setError(data.message || 'Registration failed. Email may already exist.');
+        setError(t(data.message || 'Registration failed. Email may already exist.'));
       }
     } catch (err) {
       console.error('Registration error:', err);
-      setError('Unable to connect to the server. Please check XAMPP.');
+      setError(t('Unable to connect to the server. Please check XAMPP.'));
     } finally {
       setLoading(false);
     }
@@ -64,11 +66,11 @@ export default function Register() {
         
         {/* Header */}
         <div className="text-center space-y-2">
-          <Link to="/" className="text-2xl font-black tracking-tight text-[#087f5b]">
-            SANOBAZAR
+          <Link to="/" aria-label="Sano Bazar home" className="inline-flex justify-center">
+            <img src="/sanobazar-logo.svg" alt="" className="h-12 w-auto max-w-[230px]" />
           </Link>
-          <h2 className="text-2xl font-bold text-gray-900">Create Account</h2>
-          <p className="text-xs text-gray-500">Join SANOBAZAR for a modern shopping experience</p>
+          <h2 className="text-2xl font-bold text-gray-900">{t('Create Account')}</h2>
+          <p className="text-xs text-gray-500">{t('Join SANOBAZAR for a modern shopping experience')}</p>
         </div>
 
         {/* Error Notification */}
@@ -90,7 +92,7 @@ export default function Register() {
         {/* Register Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-xs font-bold text-gray-700 mb-1">Full Name</label>
+            <label className="block text-xs font-bold text-gray-700 mb-1">{t('Full Name')}</label>
             <div className="relative">
               <User className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
               <input
@@ -105,7 +107,7 @@ export default function Register() {
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-gray-700 mb-1">Email Address</label>
+            <label className="block text-xs font-bold text-gray-700 mb-1">{t('Email Address')}</label>
             <div className="relative">
               <Mail className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
               <input
@@ -120,7 +122,7 @@ export default function Register() {
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-gray-700 mb-1">Password</label>
+            <label className="block text-xs font-bold text-gray-700 mb-1">{t('Password')}</label>
             <div className="relative">
               <Lock className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
               <input
@@ -135,7 +137,7 @@ export default function Register() {
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-gray-700 mb-1">Confirm Password</label>
+            <label className="block text-xs font-bold text-gray-700 mb-1">{t('Confirm Password')}</label>
             <div className="relative">
               <Lock className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
               <input
@@ -155,15 +157,15 @@ export default function Register() {
             className="w-full bg-[#087f5b] hover:bg-[#066347] text-white py-3 rounded-xl font-bold text-xs flex items-center justify-center gap-2 shadow-md transition active:scale-98 disabled:opacity-50"
           >
             <UserPlus className="w-4 h-4" />
-            {loading ? 'Creating Account...' : 'Register'}
+            {loading ? t('Creating Account...') : t('Register')}
           </button>
         </form>
 
         {/* Redirect Link to Separate Login Page */}
         <div className="pt-4 border-t border-gray-100 text-center text-xs text-gray-500">
-          Already have an account?{' '}
+          {t('Already have an account?')}{' '}
           <Link to="/login" className="font-bold text-[#087f5b] hover:underline">
-            Sign In
+            {t('Sign In')}
           </Link>
         </div>
 

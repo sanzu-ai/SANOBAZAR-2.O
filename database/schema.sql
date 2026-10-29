@@ -69,6 +69,18 @@ CREATE TABLE IF NOT EXISTS cart_items (
     FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
 );
 
+-- Public contact form submissions, readable only by authenticated admins.
+CREATE TABLE IF NOT EXISTS contact_messages (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    full_name VARCHAR(100) NOT NULL,
+    email VARCHAR(254) NOT NULL,
+    phone VARCHAR(30) NULL,
+    subject VARCHAR(150) NOT NULL,
+    message TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_contact_messages_created_at (created_at)
+);
+
 -- Categories Seed Data
 INSERT IGNORE INTO categories (id, category_name) VALUES
 (1, 'Electronics'),

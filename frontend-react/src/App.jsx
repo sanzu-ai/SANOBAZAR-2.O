@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { CartProvider } from './context/CartContext';
+import { LanguageProvider } from './context/LanguageContext';
 import Navbar from './components/Navbar';
 import CartDrawer from './components/CartDrawer';
 import Footer from './components/Footer';
@@ -16,6 +17,7 @@ import AdminOrders from './pages/AdminOrders';
 import AdminInventory from './pages/AdminInventory';
 import AdminUsers from './pages/AdminUsers';
 import AdminSettings from './pages/AdminSettings';
+import AdminMessages from './pages/AdminMessages';
 import { ShopPage, CategoriesPage, AboutPage, ContactPage, BlogPage, BlogArticlePage, AccountPage, CartPage, WishlistPage, ProductPage } from './pages/StorePages';
 
 // Component for Public (Customer) layout
@@ -36,9 +38,10 @@ function App() {
   const [searchQuery, setSearchQuery] = useState('');
 
   return (
-    <CartProvider>
-      <BrowserRouter>
-        <Routes>
+    <LanguageProvider>
+      <CartProvider>
+        <BrowserRouter>
+          <Routes>
           {/* Admin Routes (dark sidebar, no customer Navbar) */}
           <Route path="/admin" element={<AdminLayout />}>
             <Route index element={<AdminDashboard />} />
@@ -47,6 +50,7 @@ function App() {
             <Route path="orders" element={<AdminOrders />} />
             <Route path="inventory" element={<AdminInventory />} />
             <Route path="users" element={<AdminUsers />} />
+            <Route path="messages" element={<AdminMessages />} />
             <Route path="settings" element={<AdminSettings />} />
           </Route>
 
@@ -78,12 +82,14 @@ function App() {
           <Route path="/blog" element={<CustomerLayout><BlogPage /></CustomerLayout>} />
           <Route path="/blog/:slug" element={<CustomerLayout><BlogArticlePage /></CustomerLayout>} />
           <Route path="/account" element={<CustomerLayout><AccountPage /></CustomerLayout>} />
+          <Route path="/track-order" element={<CustomerLayout><AccountPage trackingOnly /></CustomerLayout>} />
           <Route path="/cart" element={<CustomerLayout><CartPage /></CustomerLayout>} />
           <Route path="/wishlist" element={<CustomerLayout><WishlistPage /></CustomerLayout>} />
           <Route path="/product/:slug" element={<CustomerLayout><ProductPage /></CustomerLayout>} />
-        </Routes>
-      </BrowserRouter>
-    </CartProvider>
+          </Routes>
+        </BrowserRouter>
+      </CartProvider>
+    </LanguageProvider>
   );
 }
 

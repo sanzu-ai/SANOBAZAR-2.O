@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Mail, Lock, LogIn, AlertCircle } from 'lucide-react';
 import { API_BASE } from '../lib/api';
+import { useLanguage } from '../context/LanguageContext';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -9,6 +10,8 @@ export default function Login() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
+  const { t } = useLanguage();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -33,14 +36,14 @@ export default function Login() {
         if (userObj.role === 'admin') {
           navigate('/admin');
         } else {
-          navigate('/');
+          navigate(location.state?.from || '/');
         }
       } else {
-        setError(data.message || 'Invalid email or password.');
+          setError(t(data.message || 'Invalid email or password.'));
       }
     } catch (err) {
       console.error('Login error:', err);
-      setError('Unable to connect to the server. Please check XAMPP.');
+      setError(t('Unable to connect to the server. Please check XAMPP.'));
     } finally {
       setLoading(false);
     }
@@ -52,11 +55,11 @@ export default function Login() {
         
         {/* Header */}
         <div className="text-center space-y-2">
-          <Link to="/" className="text-2xl font-black tracking-tight text-[#087f5b]">
-            SANOBAZAR
+          <Link to="/" aria-label="Sano Bazar home" className="inline-flex justify-center">
+            <img src="/sanobazar-logo.svg" alt="" className="h-12 w-auto max-w-[230px]" />
           </Link>
-          <h2 className="text-2xl font-bold text-gray-900">Welcome Back</h2>
-          <p className="text-xs text-gray-500">Sign in to manage your account and orders</p>
+          <h2 className="text-2xl font-bold text-gray-900">{t('Welcome Back')}</h2>
+          <p className="text-xs text-gray-500">{t('Sign in to manage your account and orders')}</p>
         </div>
 
         {/* Error Notification */}
@@ -70,7 +73,7 @@ export default function Login() {
         {/* Login Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-xs font-bold text-gray-700 mb-1">Email Address</label>
+            <label className="block text-xs font-bold text-gray-700 mb-1">{t('Email Address')}</label>
             <div className="relative">
               <Mail className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
               <input
@@ -85,7 +88,7 @@ export default function Login() {
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-gray-700 mb-1">Password</label>
+            <label className="block text-xs font-bold text-gray-700 mb-1">{t('Password')}</label>
             <div className="relative">
               <Lock className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
               <input
@@ -105,15 +108,15 @@ export default function Login() {
             className="w-full bg-[#087f5b] hover:bg-[#066347] text-white py-3 rounded-xl font-bold text-xs flex items-center justify-center gap-2 shadow-md transition active:scale-98 disabled:opacity-50"
           >
             <LogIn className="w-4 h-4" />
-            {loading ? 'Authenticating...' : 'Sign In'}
+            {loading ? t('Authenticating...') : t('Sign In')}
           </button>
         </form>
 
         {/* Redirect Link to Separate Register Page */}
         <div className="pt-4 border-t border-gray-100 text-center text-xs text-gray-500">
-          Don't have an account?{' '}
+          {t("Don't have an account?")}{' '}
           <Link to="/register" className="font-bold text-[#087f5b] hover:underline">
-            Create an account
+            {t('Create an account')}
           </Link>
         </div>
 
