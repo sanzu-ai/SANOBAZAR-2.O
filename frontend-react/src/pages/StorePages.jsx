@@ -142,11 +142,11 @@ export function ProductPage() {
   const addSelectedQuantity = () => { for (let i = 0; i < quantity; i += 1) addToCart(product); };
   const recommendations = recommendationState.productId === String(product.id) ? recommendationState.items : [];
   const recommendationTitle = t(recommendationState.basis === 'purchase_history' ? 'Recommended for you' : 'You may also like');
-  return <div className={shell}>
-    <Link to="/shop" className="mb-6 inline-flex items-center gap-2 text-sm font-bold text-[#901a1c] transition hover:text-[#741416]"><ArrowLeft size={16}/>{t('Back to shop')}</Link>
-    <div className="grid gap-7 lg:grid-cols-[minmax(0,1.05fr)_minmax(360px,.95fr)]">
-      <section className="rounded-3xl border border-[#e9dfd5] bg-white p-3 shadow-[0_10px_36px_rgba(48,38,34,.045)] sm:p-5">
-        <div className="flex aspect-square items-center justify-center overflow-hidden rounded-2xl bg-[#fbf8f2] p-5 sm:p-8"><img src={product.image_url} alt={t(product.name)} className="h-full w-full object-contain"/></div>
+  return <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-10 lg:px-8">
+    <Link to="/shop" className="mb-4 inline-flex items-center gap-2 text-sm font-bold text-[#901a1c] transition hover:text-[#741416] sm:mb-6"><ArrowLeft size={16}/>{t('Back to shop')}</Link>
+    <div className="grid gap-4 sm:gap-6 lg:grid-cols-[minmax(0,1.05fr)_minmax(360px,.95fr)] lg:gap-7">
+      <section className="rounded-3xl border border-[#e9dfd5] bg-white p-2 shadow-[0_10px_36px_rgba(48,38,34,.045)] sm:p-5">
+        <div className="flex aspect-[4/3] items-center justify-center overflow-hidden rounded-2xl bg-[#fbf8f2] p-3 sm:aspect-square sm:p-8"><img src={product.image_url} alt={t(product.name)} className="h-full w-full object-contain"/></div>
       </section>
       <section className="h-fit rounded-3xl border border-[#e9dfd5] bg-white p-5 shadow-[0_10px_36px_rgba(48,38,34,.045)] sm:p-7 lg:sticky lg:top-6">
         <p className="text-xs font-extrabold uppercase tracking-[.16em] text-[#901a1c]">{t(product.category || 'Sano Bazar selection')}</p>

@@ -37,11 +37,11 @@ export default function ProductCard({ product, index = 0 }) {
         )}
       </div>
 
-      <div className="flex flex-1 flex-col justify-between p-3.5 sm:p-4">
+      <div className="flex flex-1 flex-col justify-between p-3 sm:p-4">
         <div>
-          <div className="flex min-h-10 items-start justify-between gap-2">
-            <Link to={detailUrl} className="line-clamp-2 text-[13px] font-semibold leading-5 text-[#302622] transition-colors hover:text-[#901a1c] sm:text-sm">{t(product.name)}</Link>
-            <span className="shrink-0 whitespace-nowrap text-xs font-extrabold text-[#302622] sm:text-sm">{formatNPR(product.price)}</span>
+          <div className="flex min-h-[4.25rem] flex-col items-start gap-1.5 sm:min-h-10 sm:flex-row sm:items-start sm:justify-between sm:gap-2">
+            <Link to={detailUrl} className="line-clamp-2 min-w-0 text-[13px] font-semibold leading-5 text-[#302622] transition-colors hover:text-[#901a1c] sm:text-sm">{t(product.name)}</Link>
+            <span className="shrink-0 whitespace-nowrap text-sm font-extrabold leading-5 text-[#302622] sm:text-sm">{formatNPR(product.price)}</span>
           </div>
           {reviewCount > 0 && rating > 0 ? <div className="mt-1 flex items-center gap-1 text-[#d09a38]">{[1, 2, 3, 4, 5].map((star) => <Star key={star} className={`h-3 w-3 ${star <= Math.round(rating) ? 'fill-current' : ''}`} />)}<span className="ml-1 text-[10px] font-medium text-[#81756d]">{rating.toFixed(1)} ({reviewCount})</span></div> : <p className="mt-1 text-[10px] text-[#81756d]">{isOutOfStock ? t('Out of Stock') : t('Available now')}</p>}
         </div>
