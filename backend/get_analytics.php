@@ -1,14 +1,19 @@
 <?php
 require_once __DIR__ . '/auth.php';
+require_once __DIR__ . '/request_validation.php';
+requireApiMethod(['GET']);
 requireAdmin();
 require_once __DIR__ . '/db.php';
 
 try {
-    $totalRevenue = (float)$pdo->query("SELECT COALESCE(SUM(total_amount), 0)
+    $totalOrderValue = (float)$pdo->query("SELECT COALESCE(SUM(total_amount), 0)
         FROM orders WHERE order_status = 'completed'")->fetchColumn();
+    // The current payment_status enum has only pending and simulated values.
+    // Neither confirms that money was collected.
+    $collectedRevenue = 0.0;
     $totalOrders = (int)$pdo->query('SELECT COUNT(id) FROM orders')->fetchColumn();
     $completedOrders = (int)$pdo->query("SELECT COUNT(id) FROM orders WHERE order_status = 'completed'")->fetchColumn();
-    $avgOrderValue = $completedOrders > 0 ? $totalRevenue / $completedOrders : 0;
+    $avgOrderValue = $completedOrders > 0 ? $totalOrderValue / $completedOrders : 0;
 
     // Start at the first day of the month five months ago, including this month.
     $firstMonth = new DateTimeImmutable('first day of this month');
@@ -71,7 +76,10 @@ try {
     echo json_encode([
         'status' => 'success',
         'data' => [
-            'total_revenue' => number_format($totalRevenue, 2, '.', ''),
+            // Keep total_revenue as a backward-compatible alias for completed order value.
+            'total_revenue' => number_format($totalOrderValue, 2, '.', ''),
+            'total_order_value' => number_format($totalOrderValue, 2, '.', ''),
+            'collected_revenue' => number_format($collectedRevenue, 2, '.', ''),
             'total_orders' => $totalOrders,
             'completed_orders' => $completedOrders,
             'avg_order_value' => number_format($avgOrderValue, 2, '.', ''),

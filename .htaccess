@@ -1,0 +1,10 @@
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+
+  # This repository may live below XAMPP's public document root. Block
+  # development/source trees and private runtime folders if requested by URL.
+  RewriteRule ^(?:backend-production|database|frontend-react|node_modules|\.git)(?:/|$) - [F,L,NC]
+  RewriteRule ^backend/(?:vendor|rate-limit-storage|logs?)(?:/|$) - [F,L,NC]
+  RewriteRule (^|/)\.(?!well-known(?:/|$)) - [F,L]
+  RewriteRule \.(?:env|log|sql|zip|bak|backup|old|orig|swp|pem|key|map|lock)$ - [F,L,NC]
+</IfModule>

@@ -1,47 +1,30 @@
 <?php
-$origin = $_SERVER['HTTP_ORIGIN'] ?? '';
-$configuredOrigins = array_filter(array_map('trim', explode(',', getenv('SANOBAZAR_ALLOWED_ORIGINS') ?: '')));
-$allowedOrigins = array_merge([
-    'http://localhost:5173',
-    'http://127.0.0.1:5173'
-], $configuredOrigins);
-if (in_array($origin, $allowedOrigins, true)) {
-    header("Access-Control-Allow-Origin: $origin");
-    header('Access-Control-Allow-Credentials: true');
-    header('Vary: Origin');
-}
-header('Access-Control-Allow-Headers: Content-Type');
-header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
-header('Content-Type: application/json; charset=UTF-8');
-
-if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-    exit;
-}
-
-require_once 'db.php';
+require_once __DIR__ . '/cors.php';
+require_once __DIR__ . '/rate_limit.php';
+require_once __DIR__ . '/request_validation.php';
+requireApiMethod(['GET', 'POST']);
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $data = json_decode(file_get_contents('php://input'), true);
-    if (!is_array($data)) {
-        http_response_code(400);
-        echo json_encode(['status' => 'error', 'message' => 'Enter valid contact details.']);
-        exit;
-    }
+    $data = readJsonRequest(32768);
+    $fullName = trim(requireJsonString($data, 'full_name', true, 400));
+    $email = trim(requireJsonString($data, 'email', true, 1016));
+    $phone = trim(requireJsonString($data, 'phone', false, 30));
+    $subject = trim(requireJsonString($data, 'subject', true, 600));
+    $message = trim(requireJsonString($data, 'message', true, 20000));
 
-    $fullName = trim($data['full_name'] ?? '');
-    $email = trim($data['email'] ?? '');
-    $phone = trim($data['phone'] ?? '');
-    $subject = trim($data['subject'] ?? '');
-    $message = trim($data['message'] ?? '');
-
-    if (mb_strlen($fullName) < 2 || mb_strlen($fullName) > 100 ||
-        !filter_var($email, FILTER_VALIDATE_EMAIL) || strlen($email) > 254 ||
-        strlen($phone) > 30 || mb_strlen($subject) < 3 || mb_strlen($subject) > 150 ||
-        mb_strlen($message) < 10 || mb_strlen($message) > 5000) {
+    if (mb_strlen($fullName, 'UTF-8') < 2 || mb_strlen($fullName, 'UTF-8') > 100 ||
+        !filter_var($email, FILTER_VALIDATE_EMAIL) || mb_strlen($email, 'UTF-8') > 254 ||
+        ($phone !== '' && !preg_match('/^[+0-9().\s-]{7,30}$/', $phone)) ||
+        mb_strlen($subject, 'UTF-8') < 3 || mb_strlen($subject, 'UTF-8') > 150 ||
+        mb_strlen($message, 'UTF-8') < 10 || mb_strlen($message, 'UTF-8') > 5000) {
         http_response_code(422);
         echo json_encode(['status' => 'error', 'message' => 'Check the contact form fields and try again.']);
         exit;
     }
+
+    enforceRateLimit('contact-ip', rateLimitClientIp(), 20, 600);
+    enforceRateLimit('contact-email', strtolower($email), 3, 3600);
+    require_once 'db.php';
 
     try {
         $stmt = $pdo->prepare('INSERT INTO contact_messages (full_name, email, phone, subject, message) VALUES (?, ?, ?, ?, ?)');
@@ -57,6 +40,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     require_once 'auth.php';
     requireAdmin();
+    require_once 'db.php';
     try {
         $stmt = $pdo->query('SELECT id, full_name, email, phone, subject, message, created_at FROM contact_messages ORDER BY created_at DESC, id DESC');
         echo json_encode(['status' => 'success', 'data' => $stmt->fetchAll()]);

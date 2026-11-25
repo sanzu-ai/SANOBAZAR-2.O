@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
-import { API_BASE } from '../lib/api';
+import { API_BASE, apiRequest } from '../lib/api';
 import { toPaisa } from '../lib/currency';
 
 const CartContext = createContext();
@@ -111,7 +111,7 @@ export function CartProvider({ children }) {
       const savedOwner = localStorage.getItem(CART_OWNER_KEY);
       const guestItems = savedOwner ? [] : cartRef.current;
       const mergedItems = mergeCart(Array.isArray(data.data) ? data.data : [], guestItems);
-      const saveResponse = await fetch(`${API_BASE}/cart.php`, {
+      const saveResponse = await apiRequest(`${API_BASE}/cart.php`, {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
@@ -208,7 +208,7 @@ export function CartProvider({ children }) {
       const snapshot = cartPayload(cartRef.current);
       saveQueueRef.current = saveQueueRef.current.catch(() => {}).then(async () => {
         if (generation !== saveGenerationRef.current || accountIdRef.current !== accountId) return;
-        const response = await fetch(`${API_BASE}/cart.php`, {
+        const response = await apiRequest(`${API_BASE}/cart.php`, {
           method: 'POST',
           credentials: 'include',
           headers: { 'Content-Type': 'application/json' },

@@ -1,5 +1,7 @@
 <?php
 require_once 'auth.php';
+require_once __DIR__ . '/request_validation.php';
+requireApiMethod(['GET']);
 requireAdmin();
 require_once 'db.php';
 

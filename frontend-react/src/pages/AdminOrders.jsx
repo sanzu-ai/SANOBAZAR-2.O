@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { ClipboardList } from 'lucide-react';
-import { API_BASE } from '../lib/api';
+import { API_BASE, apiRequest } from '../lib/api';
 import { formatNPR } from '../lib/currency';
 
 const statuses = ['pending', 'processing', 'completed', 'cancelled'];
@@ -38,7 +38,7 @@ export default function AdminOrders() {
     setSavingId(Number(order.id));
     setError('');
     try {
-      const response = await fetch(`${API_BASE}/admin_orders.php`, {
+      const response = await apiRequest(`${API_BASE}/admin_orders.php`, {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },

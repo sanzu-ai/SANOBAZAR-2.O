@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { API_BASE } from '../lib/api';
+import { API_BASE, readApiJson } from '../lib/api';
 import HeroSection from '../components/HeroSection';
 import ServiceBenefits from '../components/ServiceBenefits';
 import CategorySection from '../components/CategorySection';
@@ -29,7 +29,11 @@ export default function Home({ searchQuery }) {
 
   useEffect(() => {
     fetch(`${API_BASE}/get_categories.php`)
-      .then(response => response.json())
+      .then(async response => {
+        const data = await readApiJson(response);
+        if (!response.ok || data.status === 'error') throw new Error(data.message || 'Unable to load categories.');
+        return data;
+      })
       .then(data => setCategories(Array.isArray(data) ? data : (Array.isArray(data.data) ? data.data : [])))
       .catch(error => console.error('Categories error:', error));
   }, []);
@@ -38,7 +42,7 @@ export default function Home({ searchQuery }) {
     let active = true;
     fetch(`${API_BASE}/get_products.php`)
       .then(async response => {
-        const data = await response.json();
+        const data = await readApiJson(response);
         if (!response.ok || data.status === 'error') throw new Error(data.message || 'Unable to load products.');
         return data;
       })

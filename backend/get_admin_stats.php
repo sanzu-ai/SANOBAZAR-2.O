@@ -1,12 +1,17 @@
 <?php
 require_once 'auth.php';
+require_once __DIR__ . '/request_validation.php';
+requireApiMethod(['GET']);
 requireAdmin();
 require_once "db.php";
 
 try {
-    // 1. Calculate Total Revenue from completed orders
-    $stmtRevenue = $pdo->query("SELECT COALESCE(SUM(total_amount), 0) AS total_revenue FROM orders WHERE order_status = 'completed'");
-    $totalRevenue = $stmtRevenue->fetchColumn();
+    // 1. Calculate total order value from completed orders
+    $stmtRevenue = $pdo->query("SELECT COALESCE(SUM(total_amount), 0) AS total_order_value FROM orders WHERE order_status = 'completed'");
+    $totalOrderValue = (float)$stmtRevenue->fetchColumn();
+    // The current payment_status enum has only pending and simulated values.
+    // Neither confirms that money was collected.
+    $collectedRevenue = 0.0;
 
     // 2. Count Total Orders
     $stmtOrders = $pdo->query("SELECT COUNT(id) AS total_orders FROM orders");
@@ -17,11 +22,11 @@ try {
     $totalUsers = $stmtUsers->fetchColumn();
 
     // 4. Count Low Stock Products (Stock quantity < 5)
-    $stmtLowStock = $pdo->query("SELECT COUNT(id) AS low_stock_count FROM products WHERE stock_quantity < 5");
+    $stmtLowStock = $pdo->query("SELECT COUNT(id) AS low_stock_count FROM products WHERE stock_quantity <= 5");
     $lowStockCount = $stmtLowStock->fetchColumn();
 
     // 5. Fetch Low Stock Product Details
-    $stmtLowStockItems = $pdo->query("SELECT id, name, price, image_url, stock_quantity FROM products WHERE stock_quantity < 5 ORDER BY stock_quantity ASC");
+    $stmtLowStockItems = $pdo->query("SELECT id, name, price, image_url, stock_quantity FROM products WHERE stock_quantity <= 5 ORDER BY stock_quantity ASC");
     $lowStockItems = $stmtLowStockItems->fetchAll();
 
     // 6. Fetch Recent Orders with Customer Name
@@ -38,7 +43,10 @@ try {
         "status" => "success",
         "stats" => [
             // Keep this machine-readable; the frontend applies locale formatting.
-            "total_revenue"   => (float)$totalRevenue,
+            // Keep total_revenue as a backward-compatible alias for completed order value.
+            "total_revenue"   => $totalOrderValue,
+            "total_order_value" => $totalOrderValue,
+            "collected_revenue" => $collectedRevenue,
             "total_orders"    => $totalOrders,
             "total_users"     => $totalUsers,
             "low_stock_count" => $lowStockCount
@@ -48,9 +56,12 @@ try {
     ]);
 
 } catch (PDOException $e) {
+    sanobazarLogException('admin_stats.query_failed', $e);
+
+    http_response_code(500);
     echo json_encode([
         "status" => "error",
-        "message" => "Failed to fetch stats: " . $e->getMessage()
+        "message" => "Failed to fetch stats. Please try again later."
     ]);
 }
 ?>

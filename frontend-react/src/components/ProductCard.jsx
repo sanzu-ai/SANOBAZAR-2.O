@@ -20,7 +20,7 @@ export default function ProductCard({ product, index = 0 }) {
     <div className="group flex flex-col overflow-hidden rounded-2xl border border-[#e9dfd5] bg-white shadow-[0_5px_20px_rgba(48,38,34,.035)] transition duration-300 hover:-translate-y-1 hover:border-[#d7b8b0] hover:shadow-[0_15px_35px_rgba(48,38,34,.10)]">
       <div className={`relative aspect-square overflow-hidden ${imageTone}`}>
         <Link to={detailUrl} aria-label={`${t('View')} ${t(product.name)}`} className="block h-full w-full"><img
-          src={product.image_url}
+          src={product.image_url || '/product-placeholder.svg'}
           alt={product.name}
           onError={(event) => { event.currentTarget.onerror = null; event.currentTarget.src = '/product-placeholder.svg'; }}
           className="h-full w-full object-contain p-5 transition-transform duration-500 group-hover:scale-[1.04] sm:p-6"

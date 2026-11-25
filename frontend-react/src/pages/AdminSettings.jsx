@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { BadgePercent, Pencil, Save, Settings, Trash2, X } from 'lucide-react';
-import { API_BASE } from '../lib/api';
+import { API_BASE, apiRequest } from '../lib/api';
 
 export default function AdminSettings() {
   const [profile, setProfile] = useState({ full_name: '', email: '' });
@@ -48,7 +48,7 @@ export default function AdminSettings() {
     setMessage({ type: '', text: '' });
     setSaving(true);
     try {
-      const response = await fetch(`${API_BASE}/admin_settings.php`, {
+      const response = await apiRequest(`${API_BASE}/admin_settings.php`, {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
@@ -77,7 +77,7 @@ export default function AdminSettings() {
     setPromoSaving(true);
     setPromoMessage({ type: '', text: '' });
     try {
-      const response = await fetch(`${API_BASE}/admin_promos.php`, {
+      const response = await apiRequest(`${API_BASE}/admin_promos.php`, {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
@@ -123,7 +123,7 @@ export default function AdminSettings() {
     setPromoBusyId(Number(promo.id));
     setPromoMessage({ type: '', text: '' });
     try {
-      const response = await fetch(`${API_BASE}/admin_promos.php`, {
+      const response = await apiRequest(`${API_BASE}/admin_promos.php`, {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
@@ -145,7 +145,7 @@ export default function AdminSettings() {
     setPromoBusyId(Number(promo.id));
     setPromoMessage({ type: '', text: '' });
     try {
-      const response = await fetch(`${API_BASE}/admin_promos.php`, {
+      const response = await apiRequest(`${API_BASE}/admin_promos.php`, {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },

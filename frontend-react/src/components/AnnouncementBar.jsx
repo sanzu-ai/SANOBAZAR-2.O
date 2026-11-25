@@ -1,7 +1,6 @@
 import { HelpCircle, PackageCheck, Truck } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useLanguage } from '../context/LanguageContext';
-import { storeContact } from '../config/storeContact';
 
 export default function AnnouncementBar() {
   const { t } = useLanguage();

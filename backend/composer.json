@@ -1,0 +1,10 @@
+{
+  "name": "sanobazar/backend",
+  "description": "PHP backend dependencies for Sano Bazar",
+  "type": "project",
+  "license": "proprietary",
+  "require": {
+    "google/auth": "^1.55",
+    "phpseclib/phpseclib": "^3.0"
+  }
+}

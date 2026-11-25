@@ -1,12 +1,16 @@
 <?php
 require_once __DIR__ . '/auth.php';
+require_once __DIR__ . '/request_validation.php';
+requireApiMethod(['GET']);
+enforceRateLimit('recommendations-ip', rateLimitClientIp(), 60, 60);
 require_once __DIR__ . '/db.php';
 
-$productId = filter_var($_GET['product_id'] ?? 0, FILTER_VALIDATE_INT);
-$categoryId = filter_var($_GET['category_id'] ?? 0, FILTER_VALIDATE_INT);
-$productId = $productId !== false && $productId > 0 ? $productId : 0;
-$categoryId = $categoryId !== false && $categoryId > 0 ? $categoryId : 0;
-$userId = filter_var($_SESSION['user']['id'] ?? null, FILTER_VALIDATE_INT);
+$productId = filter_var($_GET['product_id'] ?? 0, FILTER_VALIDATE_INT, ['options' => ['min_range' => 0, 'max_range' => SANObazar_MAX_DB_INT]]);
+$categoryId = filter_var($_GET['category_id'] ?? 0, FILTER_VALIDATE_INT, ['options' => ['min_range' => 0, 'max_range' => SANObazar_MAX_DB_INT]]);
+if ($productId === false || $categoryId === false) apiRequestError(422, 'The recommendation filter is invalid.');
+$productId = (int)$productId;
+$categoryId = (int)$categoryId;
+$userId = !empty($_SESSION['user']['id']) ? requireAuthenticatedUserId() : false;
 
 try {
     $currentProductCategory = 0;

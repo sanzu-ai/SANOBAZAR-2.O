@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Boxes, RefreshCw } from 'lucide-react';
-import { API_BASE } from '../lib/api';
+import { API_BASE, apiRequest } from '../lib/api';
 import { formatNPR } from '../lib/currency';
 
 export default function AdminInventory() {
@@ -37,7 +37,7 @@ export default function AdminInventory() {
     setBusyId(productId);
     setError('');
     try {
-      const response = await fetch(`${API_BASE}/admin_products.php`, {
+      const response = await apiRequest(`${API_BASE}/admin_products.php`, {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },

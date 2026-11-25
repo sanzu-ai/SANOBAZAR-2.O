@@ -9,6 +9,8 @@ import AdminLayout from './components/AdminLayout';
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 import Checkout from './pages/Checkout';
 import EmiCalculator from './pages/EmiCalculator';
 import AdminDashboard from './pages/AdminDashboard';
@@ -82,6 +84,16 @@ function App() {
           <Route path="/register" element={
             <CustomerLayout searchQuery={searchQuery} setSearchQuery={setSearchQuery}>
               <Register />
+            </CustomerLayout>
+          } />
+          <Route path="/forgot-password" element={
+            <CustomerLayout searchQuery={searchQuery} setSearchQuery={setSearchQuery}>
+              <ForgotPassword />
+            </CustomerLayout>
+          } />
+          <Route path="/reset-password" element={
+            <CustomerLayout searchQuery={searchQuery} setSearchQuery={setSearchQuery}>
+              <ResetPassword />
             </CustomerLayout>
           } />
           <Route path="/checkout" element={

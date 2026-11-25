@@ -7,6 +7,7 @@ frontend-react/dist/
 .env
 .env.*
 !.env.example
+!**/.env.example
 frontend-react/.env
 frontend-react/.env.*
 !frontend-react/.env.example
@@ -15,11 +16,39 @@ frontend-react/.env.*
 backend/db.php
 backend-production/db.php
 backend-production/db.production.php
+backend/smtp_config.local.php
+backend/password_reset_relay.local.php
+backend/vendor/
+backend/rate-limit-storage/*
+!backend/rate-limit-storage/.htaccess
+deployment/
 
 # Keep the duplicate production backend out of GitHub
 backend-production/
 
 # Logs and operating system files
 *.log
+**/logs/
+logs/
+*.zip
+*.7z
+*.rar
+*.tar
+*.gz
+*.bak
+*.backup
+*.old
+*.orig
+*.swp
+*.tmp
+*.temp
+*.dump
+*.sql.gz
+*~
+~$*
+database/backups/
+database/exports/
+tmp/
+temp/
 .DS_Store
 Thumbs.db

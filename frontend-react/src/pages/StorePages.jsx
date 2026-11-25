@@ -3,7 +3,7 @@ import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { ArrowLeft, ArrowRight, ChevronDown, Clock3, CreditCard, ExternalLink, HelpCircle, LoaderCircle, Mail, MapPin, MessageCircle, Minus, PackageCheck, Phone, Plus, RotateCcw, Send, ShoppingBag, ShoppingCart, Trash2, Truck, UserRound, X } from 'lucide-react';
 import ProductCard from '../components/ProductCard';
 import { useCart } from '../context/CartContext';
-import { API_BASE } from '../lib/api';
+import { API_BASE, readApiJson } from '../lib/api';
 import { formatNPR } from '../lib/currency';
 import { useLanguage } from '../context/LanguageContext';
 import { storeContact } from '../config/storeContact';
@@ -24,8 +24,16 @@ function useCatalog() {
   useEffect(() => {
     let active = true;
     Promise.all([
-      fetch(`${API_BASE}/get_products.php`).then(response => response.json()),
-      fetch(`${API_BASE}/get_categories.php`).then(response => response.json())
+      fetch(`${API_BASE}/get_products.php`).then(async response => {
+        const data = await readApiJson(response);
+        if (!response.ok || data.status === 'error') throw new Error(data.message || 'Unable to load catalog.');
+        return data;
+      }),
+      fetch(`${API_BASE}/get_categories.php`).then(async response => {
+        const data = await readApiJson(response);
+        if (!response.ok || data.status === 'error') throw new Error(data.message || 'Unable to load categories.');
+        return data;
+      })
     ]).then(([productData, categoryData]) => {
       if (!active) return;
       if (productData.status === 'error') throw new Error(productData.message || 'Unable to load catalog.');
@@ -67,7 +75,7 @@ export function ShopPage() {
     if (sort === 'price-high') list.sort((a, b) => Number(b.price) - Number(a.price));
     if (sort === 'newest') list.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
     return list;
-  }, [products, categories, categoryFilter, subcategoryFilter, quickFilter, query, maxPrice, availability, sort]);
+  }, [products, categories, categoryFilter, quickFilter, query, maxPrice, availability, sort]);
   const clearFilters = () => { setMaxPrice(''); setAvailability(false); setSort('featured'); setParams({}, { replace: true }); };
   return <div className={shell}>
     <PageHeading eyebrow={t('The Sano Bazar catalog')} title={heading}>{t('Browse the live product catalog. Filter by category, price, and current stock.')}</PageHeading>
@@ -146,14 +154,14 @@ export function ProductPage() {
     <Link to="/shop" className="mb-4 inline-flex items-center gap-2 text-sm font-bold text-[#901a1c] transition hover:text-[#741416] sm:mb-6"><ArrowLeft size={16}/>{t('Back to shop')}</Link>
     <div className="grid gap-4 sm:gap-6 lg:grid-cols-[minmax(0,1.05fr)_minmax(360px,.95fr)] lg:gap-7">
       <section className="rounded-3xl border border-[#e9dfd5] bg-white p-2 shadow-[0_10px_36px_rgba(48,38,34,.045)] sm:p-5">
-        <div className="flex aspect-[4/3] items-center justify-center overflow-hidden rounded-2xl bg-[#fbf8f2] p-3 sm:aspect-square sm:p-8"><img src={product.image_url} alt={t(product.name)} className="h-full w-full object-contain"/></div>
+        <div className="flex aspect-[4/3] items-center justify-center overflow-hidden rounded-2xl bg-[#fbf8f2] p-3 sm:aspect-square sm:p-8"><img src={product.image_url || '/product-placeholder.svg'} alt={t(product.name)} onError={(event) => { event.currentTarget.onerror = null; event.currentTarget.src = '/product-placeholder.svg'; }} className="h-full w-full object-contain"/></div>
       </section>
       <section className="h-fit rounded-3xl border border-[#e9dfd5] bg-white p-5 shadow-[0_10px_36px_rgba(48,38,34,.045)] sm:p-7 lg:sticky lg:top-6">
         <p className="text-xs font-extrabold uppercase tracking-[.16em] text-[#901a1c]">{t(product.category || 'Sano Bazar selection')}</p>
         <h1 className="mt-3 text-2xl font-black leading-tight text-[#302622] sm:text-3xl">{t(product.name)}</h1>
         <div className="mt-5 flex flex-wrap items-baseline gap-x-3 gap-y-1"><p className="text-3xl font-black text-[#302622]">{money(product.price)}</p></div>
         <div className="mt-4 flex items-center gap-2 border-y border-[#eee5dc] py-4"><span className={`h-2.5 w-2.5 rounded-full ${Number(product.stock_quantity) > 0 ? 'bg-emerald-600' : 'bg-rose-600'}`}/><p className={`text-sm font-bold ${Number(product.stock_quantity) > 0 ? 'text-emerald-700' : 'text-rose-700'}`}>{Number(product.stock_quantity) > 0 ? `${product.stock_quantity} ${t('in stock')}` : t('Out of stock')}</p><span className="ml-auto text-xs text-[#716963]">{t('Delivery options at checkout')}</span></div>
-        <p className="mt-5 text-sm leading-6 text-[#716963]">{t('Product information for this item is being updated. Contact us if you need help before ordering.')}</p>
+        <p className="mt-5 whitespace-pre-line text-sm leading-6 text-[#716963]">{product.description?.trim() ? t(product.description) : t('No product description has been added yet.')}</p>
         <div className="mt-6 flex flex-wrap items-center gap-4"><div className="inline-flex items-center rounded-full border border-[#e9dfd5] bg-[#fffdfa] p-1"><button aria-label={t('Decrease quantity')} onClick={() => setQuantity(q => Math.max(1,q-1))} className="flex h-9 w-9 items-center justify-center rounded-full text-[#514640] transition hover:bg-[#f9eeee] hover:text-[#901a1c]"><Minus size={16}/></button><span className="min-w-10 text-center text-sm font-extrabold text-[#302622]">{quantity}</span><button aria-label={t('Increase quantity')} onClick={() => setQuantity(q => Math.min(Number(product.stock_quantity),q+1))} className="flex h-9 w-9 items-center justify-center rounded-full text-[#514640] transition hover:bg-[#f9eeee] hover:text-[#901a1c]"><Plus size={16}/></button></div><p className="text-xs text-[#716963]">{t('Quantity')}</p></div>
         <button disabled={!Number(product.stock_quantity)} onClick={addSelectedQuantity} className={`${button} mt-6 w-full py-3.5`}><ShoppingCart size={17}/>{t('Add to cart')}</button>
         <button disabled={!Number(product.stock_quantity)} onClick={() => { addSelectedQuantity(); navigate('/checkout'); }} className="mt-3 w-full rounded-full border border-[#901a1c] px-5 py-3.5 text-sm font-bold text-[#901a1c] transition hover:bg-[#f9eeee] disabled:opacity-50">{t('Buy now')}</button>

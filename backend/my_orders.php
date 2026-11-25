@@ -1,12 +1,10 @@
 <?php
 require_once __DIR__ . '/auth.php';
+require_once __DIR__ . '/request_validation.php';
+requireApiMethod(['GET']);
 require_once __DIR__ . '/db.php';
 
-if (empty($_SESSION['user']['id'])) {
-    http_response_code(401);
-    echo json_encode(['status' => 'error', 'message' => 'Please sign in to view your orders.', 'data' => []]);
-    exit;
-}
+$userId = requireAuthenticatedUserId();
 
 try {
     $stmt = $pdo->prepare('SELECT o.id, o.total_amount, o.discount_amount, o.promo_code, o.shipping_address, o.phone_number,
@@ -15,7 +13,7 @@ try {
         WHERE o.user_id = ? GROUP BY o.id, o.total_amount, o.discount_amount, o.promo_code, o.shipping_address, o.phone_number,
             o.payment_method, o.payment_status, o.order_status, o.created_at
         ORDER BY o.created_at DESC');
-    $stmt->execute([$_SESSION['user']['id']]);
+    $stmt->execute([$userId]);
     echo json_encode(['status' => 'success', 'data' => $stmt->fetchAll(PDO::FETCH_ASSOC)]);
 } catch (PDOException $e) {
     http_response_code(500);

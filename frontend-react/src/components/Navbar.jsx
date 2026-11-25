@@ -3,7 +3,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { ChevronDown, Menu, PhoneCall, Search, ShieldCheck, ShoppingCart, UserRound, X } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useLanguage } from '../context/LanguageContext';
-import { API_BASE } from '../lib/api';
+import { API_BASE, apiRequest } from '../lib/api';
 import { storeContact } from '../config/storeContact';
 import { catalogDepartments, catalogHref } from '../config/catalogMenu';
 import AnnouncementBar from './AnnouncementBar';
@@ -33,7 +33,7 @@ export default function Navbar({ searchQuery, setSearchQuery }) {
 
   const logout = async () => {
     try {
-      await fetch(`${API_BASE}/logout.php`, { method: 'POST', credentials: 'include' });
+      await apiRequest(`${API_BASE}/logout.php`, { method: 'POST' });
     } catch (error) {
       console.error('Logout request failed:', error);
     } finally {

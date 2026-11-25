@@ -9,9 +9,14 @@ CREATE TABLE IF NOT EXISTS users (
     id INT AUTO_INCREMENT PRIMARY KEY,
     full_name VARCHAR(100) NOT NULL,
     email VARCHAR(100) NOT NULL UNIQUE,
-    password VARCHAR(255) NOT NULL,
+    phone_number VARCHAR(30) NULL,
+    password VARCHAR(255) NULL,
+    auth_version INT UNSIGNED NOT NULL DEFAULT 0,
     role ENUM('customer', 'admin') DEFAULT 'customer',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    terms_accepted_at TIMESTAMP NULL,
+    google_sub VARCHAR(255) CHARACTER SET ascii COLLATE ascii_bin NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uq_users_google_sub (google_sub)
 );
 
 -- 2. CATEGORIES TABLE
@@ -26,6 +31,7 @@ CREATE TABLE IF NOT EXISTS products (
     id INT AUTO_INCREMENT PRIMARY KEY,
     category_id INT NOT NULL,
     name VARCHAR(150) NOT NULL,
+    description TEXT NULL,
     price DECIMAL(10,2) NOT NULL,
     stock_quantity INT NOT NULL DEFAULT 0,
     image_url VARCHAR(500) NOT NULL,
@@ -37,6 +43,7 @@ CREATE TABLE IF NOT EXISTS products (
 CREATE TABLE IF NOT EXISTS orders (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
+    idempotency_key VARCHAR(64) NULL,
     total_amount DECIMAL(10,2) NOT NULL,
     subtotal_amount DECIMAL(10,2) NOT NULL DEFAULT 0.00,
     discount_amount DECIMAL(10,2) NOT NULL DEFAULT 0.00,
@@ -47,6 +54,7 @@ CREATE TABLE IF NOT EXISTS orders (
     payment_status ENUM('pending', 'simulated') NOT NULL DEFAULT 'pending',
     order_status ENUM('pending', 'processing', 'completed', 'cancelled') DEFAULT 'pending',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uq_orders_user_idempotency_key (user_id, idempotency_key),
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 

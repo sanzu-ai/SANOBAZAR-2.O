@@ -14,7 +14,7 @@ import {
   Settings,
   Mail
 } from 'lucide-react';
-import { API_BASE } from '../lib/api';
+import { API_BASE, apiRequest } from '../lib/api';
 
 export default function AdminLayout() {
   const navigate = useNavigate();
@@ -37,10 +37,7 @@ export default function AdminLayout() {
 
   const handleLogout = async () => {
     try {
-      const response = await fetch(`${API_BASE}/logout.php`, {
-        method: 'POST',
-        credentials: 'include'
-      });
+      const response = await apiRequest(`${API_BASE}/logout.php`, { method: 'POST' });
       if (!response.ok) throw new Error('Logout failed');
     } catch {
       window.alert('Could not reach the server to sign out. Please try again.');

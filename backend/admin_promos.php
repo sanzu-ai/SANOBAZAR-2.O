@@ -1,15 +1,21 @@
 <?php
 require_once 'auth.php';
+require_once __DIR__ . '/request_validation.php';
+$method = strtoupper($_SERVER['REQUEST_METHOD'] ?? 'GET');
+requireApiMethod(['GET', 'POST']);
 requireAdmin();
 require_once 'db.php';
 
 function optionalPromoDate($value)
 {
-    if ($value === null || trim((string) $value) === '') {
+    if ($value === null || (is_string($value) && trim($value) === '')) {
         return null;
     }
-    $date = DateTime::createFromFormat('Y-m-d\TH:i', (string) $value, new DateTimeZone('Asia/Kathmandu'));
-    if (!$date || $date->format('Y-m-d\TH:i') !== (string) $value) {
+    if (!is_string($value) || strlen($value) > 16) {
+        throw new InvalidArgumentException('Enter valid promotion dates.');
+    }
+    $date = DateTime::createFromFormat('Y-m-d\TH:i', $value, new DateTimeZone('Asia/Kathmandu'));
+    if (!$date || $date->format('Y-m-d\TH:i') !== $value) {
         throw new InvalidArgumentException('Enter valid promotion dates.');
     }
     return $date->format('Y-m-d H:i:s');
@@ -20,7 +26,6 @@ function promoList(PDO $pdo): array
     return $pdo->query('SELECT id, code, discount_type, discount_value, minimum_order, maximum_discount, usage_limit, usage_count, starts_at, expires_at, is_active, created_at FROM promo_codes ORDER BY created_at DESC, id DESC')->fetchAll(PDO::FETCH_ASSOC);
 }
 
-$method = $_SERVER['REQUEST_METHOD'];
 if ($method === 'GET') {
     echo json_encode(['status' => 'success', 'data' => promoList($pdo)]);
     exit;
@@ -31,14 +36,16 @@ if ($method !== 'POST') {
     echo json_encode(['status' => 'error', 'message' => 'Method not allowed.']);
     exit;
 }
+requireCsrfToken();
+enforceRateLimit('admin-write-user', (string)$_SESSION['user']['id'], 30, 60);
 
-$data = json_decode(file_get_contents('php://input'), true) ?? [];
-$action = $data['action'] ?? 'create';
+$data = readJsonRequest(16384);
+$action = array_key_exists('action', $data) ? requireJsonString($data, 'action', true, 16) : 'create';
 
 try {
     if ($action === 'delete') {
-        $id = filter_var($data['id'] ?? null, FILTER_VALIDATE_INT);
-        if ($id === false || $id < 1) {
+        $id = validateApiInt($data['id'] ?? null, 1, SANObazar_MAX_DB_INT);
+        if ($id === false) {
             throw new InvalidArgumentException('Choose a valid promo code.');
         }
         $delete = $pdo->prepare('DELETE FROM promo_codes WHERE id = ?');
@@ -53,9 +60,9 @@ try {
     }
 
     if ($action === 'toggle') {
-        $id = filter_var($data['id'] ?? null, FILTER_VALIDATE_INT);
-        $active = filter_var($data['is_active'] ?? null, FILTER_VALIDATE_INT);
-        if ($id === false || $id < 1 || !in_array($active, [0, 1], true)) {
+        $id = validateApiInt($data['id'] ?? null, 1, SANObazar_MAX_DB_INT);
+        $active = validateApiInt($data['is_active'] ?? null, 0, 1);
+        if ($id === false || $active === false) {
             throw new InvalidArgumentException('Choose a valid promotion status.');
         }
         $stmt = $pdo->prepare('UPDATE promo_codes SET is_active = ? WHERE id = ?');
@@ -80,8 +87,8 @@ try {
     $id = null;
     $existingUsageCount = 0;
     if ($action === 'update') {
-        $id = filter_var($data['id'] ?? null, FILTER_VALIDATE_INT);
-        if ($id === false || $id < 1) {
+        $id = validateApiInt($data['id'] ?? null, 1, SANObazar_MAX_DB_INT);
+        if ($id === false) {
             throw new InvalidArgumentException('Choose a valid promo code to edit.');
         }
         $existing = $pdo->prepare('SELECT usage_count FROM promo_codes WHERE id = ?');
@@ -95,14 +102,21 @@ try {
         $existingUsageCount = (int) $usageCount;
     }
 
-    $code = strtoupper(trim((string) ($data['code'] ?? '')));
-    $type = $data['discount_type'] ?? '';
-    $value = filter_var($data['discount_value'] ?? null, FILTER_VALIDATE_FLOAT);
-    $minimum = filter_var($data['minimum_order'] ?? '0', FILTER_VALIDATE_FLOAT);
-    $maximum = trim((string) ($data['maximum_discount'] ?? '')) === '' ? null : filter_var($data['maximum_discount'], FILTER_VALIDATE_FLOAT);
-    $usageLimit = trim((string) ($data['usage_limit'] ?? '')) === '' ? null : filter_var($data['usage_limit'], FILTER_VALIDATE_INT);
-    $startsAt = optionalPromoDate($data['starts_at'] ?? null);
-    $expiresAt = optionalPromoDate($data['expires_at'] ?? null);
+    $code = strtoupper(trim(requireJsonString($data, 'code', true, 160)));
+    $type = array_key_exists('discount_type', $data) ? requireJsonString($data, 'discount_type', true, 16) : '';
+    $value = validateApiDecimal($data['discount_value'] ?? null, false);
+    $minimum = validateApiDecimal($data['minimum_order'] ?? '0', true);
+    $maximumRaw = $data['maximum_discount'] ?? '';
+    $maximum = ($maximumRaw === '' || $maximumRaw === null) ? null : validateApiDecimal($maximumRaw, false);
+    $usageRaw = $data['usage_limit'] ?? '';
+    $usageLimit = ($usageRaw === '' || $usageRaw === null) ? null : validateApiInt($usageRaw, 1, SANObazar_MAX_DB_INT);
+    $startsRaw = $data['starts_at'] ?? null;
+    $expiresRaw = $data['expires_at'] ?? null;
+    if (($startsRaw !== null && !is_string($startsRaw)) || ($expiresRaw !== null && !is_string($expiresRaw))) {
+        throw new InvalidArgumentException('Enter valid promotion dates.');
+    }
+    $startsAt = optionalPromoDate($startsRaw);
+    $expiresAt = optionalPromoDate($expiresRaw);
 
     if (!preg_match('/^[A-Z0-9][A-Z0-9_-]{1,39}$/', $code)) {
         throw new InvalidArgumentException('Promo codes must be 2–40 characters using letters, numbers, hyphens, or underscores.');
@@ -110,7 +124,7 @@ try {
     if (!in_array($type, ['percentage', 'fixed'], true) || $value === false || $value <= 0 || ($type === 'percentage' && $value > 100)) {
         throw new InvalidArgumentException('Enter a valid discount type and value. Percentage discounts cannot exceed 100%.');
     }
-    if ($minimum === false || $minimum < 0 || ($maximum !== null && ($maximum === false || $maximum <= 0))) {
+    if ($minimum === false || $minimum < 0 || ($maximum !== null && $maximum === false)) {
         throw new InvalidArgumentException('Enter valid minimum order and maximum discount amounts.');
     }
     if ($usageLimit !== null && ($usageLimit === false || $usageLimit < 1)) {

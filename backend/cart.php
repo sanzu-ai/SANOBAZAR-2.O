@@ -1,13 +1,12 @@
 <?php
 require_once __DIR__ . '/auth.php';
-require_once __DIR__ . '/db.php';
+require_once __DIR__ . '/request_validation.php';
+$method = strtoupper($_SERVER['REQUEST_METHOD'] ?? 'GET');
+requireApiMethod(['GET', 'POST', 'DELETE']);
 
-$userId = filter_var($_SESSION['user']['id'] ?? null, FILTER_VALIDATE_INT);
-if ($userId === false || $userId < 1) {
-    http_response_code(401);
-    echo json_encode(['status' => 'error', 'message' => 'Please sign in to sync your cart.']);
-    exit;
-}
+$userId = requireAuthenticatedUserId();
+
+final class CartValidationException extends RuntimeException {}
 
 function getCartItems(PDO $pdo, int $userId): array
 {
@@ -22,14 +21,20 @@ function getCartItems(PDO $pdo, int $userId): array
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
-$method = $_SERVER['REQUEST_METHOD'];
+if (in_array($method, ['POST', 'DELETE'], true)) {
+    requireCsrfToken();
+    enforceRateLimit('cart-user', (string)$userId, 120, 60);
+    enforceRateLimit('cart-ip', rateLimitClientIp(), 300, 60);
+}
 
 if ($method === 'GET') {
+    require_once __DIR__ . '/db.php';
     echo json_encode(['status' => 'success', 'data' => getCartItems($pdo, $userId)]);
     exit;
 }
 
 if ($method === 'DELETE') {
+    require_once __DIR__ . '/db.php';
     $stmt = $pdo->prepare('DELETE FROM cart_items WHERE user_id = ?');
     $stmt->execute([$userId]);
     echo json_encode(['status' => 'success', 'data' => []]);
@@ -37,23 +42,35 @@ if ($method === 'DELETE') {
 }
 
 if ($method === 'POST') {
-    $data = json_decode(file_get_contents('php://input'), true) ?? [];
-    if (!is_array($data['items'] ?? null) || count($data['items']) > 100) {
+    $data = readJsonRequest(65536);
+    if (!is_array($data['items'] ?? null) || !array_is_list($data['items']) || count($data['items']) > 100) {
         http_response_code(422);
         echo json_encode(['status' => 'error', 'message' => 'Your cart data is invalid.']);
         exit;
     }
 
+    require_once __DIR__ . '/db.php';
+
     $requested = [];
     foreach ($data['items'] as $item) {
-        $productId = filter_var($item['product_id'] ?? null, FILTER_VALIDATE_INT);
-        $quantity = filter_var($item['quantity'] ?? null, FILTER_VALIDATE_INT);
-        if ($productId === false || $productId < 1 || $quantity === false || $quantity < 1) {
+        if (!is_array($item)) {
+            http_response_code(422);
+            echo json_encode(['status' => 'error', 'message' => 'Your cart contains an invalid product or quantity.']);
+            exit;
+        }
+        $productId = validateApiInt($item['product_id'] ?? null, 1, SANObazar_MAX_DB_INT);
+        $quantity = validateApiInt($item['quantity'] ?? null, 1, SANObazar_MAX_DB_INT);
+        if ($productId === false || $quantity === false) {
             http_response_code(422);
             echo json_encode(['status' => 'error', 'message' => 'Your cart contains an invalid product or quantity.']);
             exit;
         }
         $requested[$productId] = ($requested[$productId] ?? 0) + $quantity;
+        if ($requested[$productId] > SANObazar_MAX_DB_INT) {
+            http_response_code(422);
+            echo json_encode(['status' => 'error', 'message' => 'Your cart contains an invalid product or quantity.']);
+            exit;
+        }
     }
     ksort($requested, SORT_NUMERIC);
 
@@ -65,7 +82,7 @@ if ($method === 'POST') {
             $productQuery->execute([$productId]);
             $stock = $productQuery->fetchColumn();
             if ($stock === false) {
-                throw new RuntimeException('A product in your cart is no longer available.');
+                throw new CartValidationException('A product in your cart is no longer available.');
             }
             $allowedQuantity = min($quantity, (int)$stock);
             if ($allowedQuantity > 0) {
@@ -84,13 +101,25 @@ if ($method === 'POST') {
         echo json_encode(['status' => 'success', 'data' => getCartItems($pdo, $userId)]);
     } catch (Throwable $e) {
         if ($pdo->inTransaction()) {
-            $pdo->rollBack();
+            try {
+                $pdo->rollBack();
+            } catch (Throwable $rollbackError) {
+                sanobazarLogException('cart.rollback_failed', $rollbackError);
+                sanobazarLogException('cart.save_failed', $e);
+                http_response_code(500);
+                echo json_encode(['status' => 'error', 'message' => 'Could not save your cart.']);
+                exit;
+            }
         }
-        http_response_code($e instanceof PDOException ? 500 : 422);
-        echo json_encode([
-            'status' => 'error',
-            'message' => $e instanceof PDOException ? 'Could not save your cart.' : $e->getMessage()
-        ]);
+        if ($e instanceof CartValidationException) {
+            http_response_code(422);
+            echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
+            exit;
+        }
+
+        sanobazarLogException('cart.save_failed', $e);
+        http_response_code(500);
+        echo json_encode(['status' => 'error', 'message' => 'Could not save your cart.']);
     }
     exit;
 }

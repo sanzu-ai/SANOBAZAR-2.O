@@ -1,18 +1,31 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { AlertCircle, ArrowLeft, CheckCircle2, CreditCard, MapPin, Phone, ShoppingBag, Truck, UserRound } from 'lucide-react';
-import { API_BASE } from '../lib/api';
+import { API_BASE, apiRequest, readApiJson } from '../lib/api';
 import { formatNPR, toPaisa } from '../lib/currency';
 import { useLanguage } from '../context/LanguageContext';
 
 const fieldClass = 'mt-1.5 w-full rounded border border-[#dcd7d2] bg-white px-3 py-3 text-sm text-[#302622] outline-none transition placeholder:text-[#aaa19a] hover:border-[#b8aea8] focus:border-[#901a1c] focus:ring-2 focus:ring-[#901a1c]/10';
+
+function createIdempotencyKey() {
+  const bytes = new Uint8Array(16);
+  window.crypto.getRandomValues(bytes);
+  return Array.from(bytes, byte => byte.toString(16).padStart(2, '0')).join('');
+}
+
+async function fingerprintCheckout(payload) {
+  const bytes = new TextEncoder().encode(JSON.stringify(payload));
+  const digest = await window.crypto.subtle.digest('SHA-256', bytes);
+  return Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, '0')).join('');
+}
 
 export default function Checkout() {
   const { cart, totalItems, totalPrice, clearCart, setIsCartOpen, appliedPromo, promoDiscount, discountedTotal, promoApplying, promoError, applyPromoCode, removePromoCode, resetPromoError } = useCart();
   const navigate = useNavigate();
   const location = useLocation();
   const { t } = useLanguage();
+  const checkoutAttemptRef = useRef(null);
 
   const [currentUser] = useState(() => {
     try {
@@ -56,15 +69,51 @@ export default function Checkout() {
         cart: cart.map(item => ({ id: item.id, quantity: item.quantity }))
       };
 
-      const response = await fetch(`${API_BASE}/place_order.php`, {
+      const storageKey = `sanobazar_checkout_attempt_${currentUser.id}`;
+      const fingerprint = await fingerprintCheckout(orderPayload);
+      let savedAttempt = null;
+      try {
+        savedAttempt = JSON.parse(sessionStorage.getItem(storageKey) || 'null');
+      } catch {
+        try {
+          sessionStorage.removeItem(storageKey);
+        } catch {
+          // Storage can be unavailable in restricted browser contexts.
+        }
+      }
+      const validAttempt = attempt =>
+        attempt?.fingerprint === fingerprint && /^[a-f0-9]{32}$/i.test(attempt?.key || '');
+      const reusableAttempt = validAttempt(savedAttempt)
+        ? savedAttempt
+        : validAttempt(checkoutAttemptRef.current)
+          ? checkoutAttemptRef.current
+          : null;
+      const idempotencyKey = reusableAttempt?.key || createIdempotencyKey();
+      checkoutAttemptRef.current = { fingerprint, key: idempotencyKey };
+      try {
+        sessionStorage.setItem(storageKey, JSON.stringify({ fingerprint, key: idempotencyKey }));
+      } catch {
+        // The ref keeps same-page retries stable if sessionStorage is unavailable.
+      }
+      orderPayload.idempotency_key = idempotencyKey;
+
+      const response = await apiRequest(`${API_BASE}/place_order.php`, {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(orderPayload)
       });
 
-      const data = await response.json();
+      const data = await readApiJson(response);
       if (response.ok && data.status === 'success' && data.order_id) {
+        if (checkoutAttemptRef.current?.fingerprint === fingerprint && checkoutAttemptRef.current?.key === idempotencyKey) {
+          checkoutAttemptRef.current = null;
+        }
+        try {
+          sessionStorage.removeItem(storageKey);
+        } catch {
+          // The order is already confirmed; a stale key is harmless because the cart changes.
+        }
         setOrderSuccess({
           id: data.order_id,
           amount: Number(data.total_amount),
@@ -81,7 +130,7 @@ export default function Checkout() {
       }
     } catch (err) {
       console.error('Order placement error:', err);
-      setError(t('Connection failed. Make sure XAMPP Apache and MySQL are running.'));
+      setError(t('Unable to connect to the order service. Please try again later.'));
     } finally {
       setLoading(false);
     }

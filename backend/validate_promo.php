@@ -1,24 +1,27 @@
 <?php
 require_once 'auth.php';
+require_once __DIR__ . '/request_validation.php';
+requireApiMethod(['POST']);
+
+if (!empty($_SESSION['user']['id'])) {
+    requireAuthenticatedUserId();
+}
+
+enforceRateLimit('promo-validation-ip', rateLimitClientIp(), 60, 60);
+enforceRateLimit('promo-validation-user', (string)($_SESSION['user']['id'] ?? rateLimitClientIp()), 30, 60);
 require_once 'db.php';
 require_once 'promo_helpers.php';
 
-if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    http_response_code(405);
-    echo json_encode(['status' => 'error', 'message' => 'Method not allowed.']);
-    exit;
-}
-
-$data = json_decode(file_get_contents('php://input'), true) ?? [];
-$code = strtoupper(trim((string) ($data['promo_code'] ?? '')));
-$cart = is_array($data['cart'] ?? null) ? $data['cart'] : [];
+$data = readJsonRequest(65536);
+$code = strtoupper(trim(requireJsonString($data, 'promo_code', true, 160)));
+$cart = $data['cart'] ?? null;
 
 if (!preg_match('/^[A-Z0-9][A-Z0-9_-]{1,39}$/', $code)) {
     http_response_code(422);
     echo json_encode(['status' => 'error', 'message' => 'Enter a valid promo code.']);
     exit;
 }
-if (!$cart) {
+if (!is_array($cart) || !array_is_list($cart) || !$cart || count($cart) > 100) {
     http_response_code(422);
     echo json_encode(['status' => 'error', 'message' => 'Your cart is empty.']);
     exit;
@@ -26,14 +29,24 @@ if (!$cart) {
 
 $quantities = [];
 foreach ($cart as $item) {
-    $productId = filter_var($item['id'] ?? null, FILTER_VALIDATE_INT);
-    $quantity = filter_var($item['quantity'] ?? null, FILTER_VALIDATE_INT);
-    if ($productId === false || $productId < 1 || $quantity === false || $quantity < 1) {
+    if (!is_array($item)) {
+        http_response_code(422);
+        echo json_encode(['status' => 'error', 'message' => 'Your cart contains an invalid product or quantity.']);
+        exit;
+    }
+    $productId = validateApiInt($item['id'] ?? null, 1, SANObazar_MAX_DB_INT);
+    $quantity = validateApiInt($item['quantity'] ?? null, 1, SANObazar_MAX_DB_INT);
+    if ($productId === false || $quantity === false) {
         http_response_code(422);
         echo json_encode(['status' => 'error', 'message' => 'Your cart contains an invalid product or quantity.']);
         exit;
     }
     $quantities[$productId] = ($quantities[$productId] ?? 0) + $quantity;
+    if ($quantities[$productId] > SANObazar_MAX_DB_INT) {
+        http_response_code(422);
+        echo json_encode(['status' => 'error', 'message' => 'Your cart contains an invalid product or quantity.']);
+        exit;
+    }
 }
 
 try {
@@ -51,14 +64,14 @@ try {
     $promo = calculatePromo($pdo, $code, $subtotalPaisa);
     echo json_encode(['status' => 'success', 'promo' => $promo]);
 } catch (PDOException $error) {
-    error_log($error->getMessage());
+    sanobazarLogException('promo.validation_query_failed', $error);
     http_response_code(500);
     echo json_encode(['status' => 'error', 'message' => 'Could not validate this promo code right now.']);
 } catch (RuntimeException $error) {
     http_response_code(422);
     echo json_encode(['status' => 'error', 'message' => $error->getMessage()]);
 } catch (Throwable $error) {
-    error_log($error->getMessage());
+    sanobazarLogException('promo.validation_failed', $error);
     http_response_code(500);
     echo json_encode(['status' => 'error', 'message' => 'Could not validate this promo code right now.']);
 }

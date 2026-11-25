@@ -13,12 +13,14 @@ import {
   CheckCircle2, 
   AlertCircle 
 } from 'lucide-react';
-import { API_BASE } from '../lib/api';
+import { API_BASE, apiRequest } from '../lib/api';
 import { formatNPR } from '../lib/currency';
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState({
     total_revenue: 0,
+    total_order_value: 0,
+    collected_revenue: 0,
     total_orders: 0,
     total_users: 0,
     low_stock_count: 0
@@ -42,7 +44,8 @@ export default function AdminDashboard() {
     category_id: '',
     price: '',
     stock: '',
-    image_url: ''
+    image_url: '',
+    description: ''
   });
   const [modalMessage, setModalMessage] = useState({ type: '', text: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -157,7 +160,7 @@ export default function AdminDashboard() {
 
     try {
       setIsSubmitting(true);
-      const res = await fetch(`${API_BASE}/admin_products.php`, {
+      const res = await apiRequest(`${API_BASE}/admin_products.php`, {
         credentials: 'include',
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -168,7 +171,8 @@ export default function AdminDashboard() {
           category_id: parseInt(newProduct.category_id, 10),
           price,
           stock_quantity: stock,
-          image_url: newProduct.image_url || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=500'
+          image_url: newProduct.image_url || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=500',
+          description: newProduct.description
         })
       });
 
@@ -187,7 +191,8 @@ export default function AdminDashboard() {
             category_id: categories.length > 0 ? String(categories[0].id) : '',
             price: '',
             stock: '',
-            image_url: ''
+            image_url: '',
+            description: ''
           });
           reloadDashboard();
         }, 1000);
@@ -209,7 +214,8 @@ export default function AdminDashboard() {
       category_id: categories.length > 0 ? String(categories[0].id) : '',
       price: '',
       stock: '',
-      image_url: ''
+      image_url: '',
+      description: ''
     });
     setIsAddModalOpen(true);
   };
@@ -222,7 +228,8 @@ export default function AdminDashboard() {
       category_id: String(product.category_id || ''),
       price: String(product.price ?? ''),
       stock: String(product.stock_quantity ?? 0),
-      image_url: product.image_url || ''
+      image_url: product.image_url || '',
+      description: product.description || ''
     });
     setIsAddModalOpen(true);
   };
@@ -233,7 +240,7 @@ export default function AdminDashboard() {
     if (!addQty || isNaN(addQty) || parseInt(addQty) <= 0) return;
 
     try {
-      const res = await fetch(`${API_BASE}/admin_products.php`, {
+      const res = await apiRequest(`${API_BASE}/admin_products.php`, {
         credentials: 'include',
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -259,7 +266,7 @@ export default function AdminDashboard() {
     if (!confirm(`Are you sure you want to delete "${productName}"?`)) return;
 
     try {
-      const res = await fetch(`${API_BASE}/admin_products.php?id=${productId}`, {
+      const res = await apiRequest(`${API_BASE}/admin_products.php?id=${productId}`, {
         credentials: 'include',
         method: 'DELETE'
       });
@@ -324,11 +331,11 @@ export default function AdminDashboard() {
         {/* Total Revenue */}
         <div className="flex items-center justify-between rounded-[22px] border border-[#e8ded2] bg-[#fffdf9] p-5">
           <div>
-            <p className="text-xs font-medium text-[#81756d]">Revenue</p>
+            <p className="text-xs font-medium text-[#81756d]">Total Order Value</p>
             <h3 className="mt-1 text-2xl font-black text-[#211712]">
-              {formatNPR(stats.total_revenue)}
+              {formatNPR(stats.total_order_value ?? stats.total_revenue)}
             </h3>
-            <span className="mt-1 inline-block text-[11px] font-medium text-[#417b4d]">{new Date().toLocaleDateString('en', { month: 'short' })} · completed orders</span>
+            <span className="mt-1 inline-block text-[11px] font-medium text-[#417b4d]">Collected Revenue · {formatNPR(stats.collected_revenue)}</span>
           </div>
           <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#f6eddb] text-[#9b7227]">
             <DollarSign className="w-6 h-6" />
@@ -379,11 +386,11 @@ export default function AdminDashboard() {
           <div className="mb-3 flex items-start justify-between gap-3">
             <div>
               <h2 className="text-sm font-bold text-[#211712]">Monthly sales</h2>
-              <p className="mt-1 text-xs text-[#81756d]">Completed revenue · last six months</p>
+              <p className="mt-1 text-xs text-[#81756d]">Completed order value · last six months</p>
             </div>
             <span className="rounded-full bg-[#f6eddb] px-3 py-1 text-[10px] font-bold text-[#8e6828]">NPR</span>
           </div>
-          <div className="relative mt-4 h-48 sm:h-56" role="img" aria-label="Monthly completed revenue for the last six months">
+          <div className="relative mt-4 h-48 sm:h-56" role="img" aria-label="Monthly completed order value for the last six months">
             <svg viewBox="0 0 600 170" preserveAspectRatio="none" className="h-[calc(100%-28px)] w-full overflow-visible">
               <defs><linearGradient id="dashboard-sales-fill" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stopColor="#d89e3e" stopOpacity=".27"/><stop offset="100%" stopColor="#d89e3e" stopOpacity="0"/></linearGradient></defs>
               {[30, 70, 110, 150].map(y => <line key={y} x1="20" x2="580" y1={y} y2={y} stroke="#eee6dc" strokeDasharray="3 5"/>)}
@@ -667,6 +674,18 @@ export default function AdminDashboard() {
                     className="w-full rounded-xl border border-[#e8ded2] bg-[#fbf8f2] px-3.5 py-2 text-xs focus:border-[#ae292d]/50 focus:outline-none focus:ring-2 focus:ring-[#ae292d]/15"
                   />
                 </div>
+              </div>
+
+              <div>
+                <label className="mb-1 block text-xs font-semibold text-gray-700">Product description</label>
+                <textarea
+                  rows={3}
+                  maxLength={10000}
+                  placeholder="Describe the product, key features, or materials."
+                  value={newProduct.description}
+                  onChange={(e) => setNewProduct({ ...newProduct, description: e.target.value })}
+                  className="w-full resize-y rounded-xl border border-[#e8ded2] bg-[#fbf8f2] px-3.5 py-2 text-xs focus:border-[#ae292d]/50 focus:outline-none focus:ring-2 focus:ring-[#ae292d]/15"
+                />
               </div>
 
               {/* Image URL */}
